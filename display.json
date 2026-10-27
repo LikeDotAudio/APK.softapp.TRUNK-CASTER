@@ -1,0 +1,15 @@
+{
+  "id": "Intercom_TRUNK_CASTER",
+  "name": "TRUNK-CASTER",
+  "icon": "📡",
+  "group": "Intercom",
+  "subGroup": "TRUNK-CASTER",
+  "kind": "web",
+  "class": "execution",
+  "entry": "index.html",
+  "tech": "web",
+  "app": "APK:Softapps/HARDWARE_AND_NETWORK/INTERCOM.TRUNK-CASTER/index.html",
+  "description": "INTERCOM: TRUNK-CASTER — the Ward-Beck MicroCOM II intercom (matrix, panels, MicroCOM III, the MCOM.EXE emulator) and the bare metal machines it runs on, alive or dead off the bus.",
+  "topic": "APK.audio/Gui/Softapps/Intercom/TRUNK_CASTER",
+  "autostart": false
+}

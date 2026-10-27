@@ -1,0 +1,6 @@
+[submodule "SRC/microcom-sim"]
+	path = SRC/microcom-sim
+	url = https://github.com/LikeDotAudio/microcom-sim.git
+[submodule "SRC/microcom"]
+	path = SRC/microcom
+	url = https://github.com/LikeDotAudio/microcom.git

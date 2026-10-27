@@ -1,0 +1,12 @@
+{
+  "name": "trunk-caster",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "TRUNK-CASTER — the MicroCOM intercom and the bare metal machines it runs on, in the APK.audio OS. No build step for the app itself: plain ES modules; tools/build-intercom.sh builds intercom/ from SRC/microcom-sim.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "build:intercom": "tools/build-intercom.sh"
+  }
+}
