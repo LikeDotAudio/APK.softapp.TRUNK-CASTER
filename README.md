@@ -12,6 +12,12 @@ The intercom and the bare metal machines it runs on, in one window of the
 | 💾 **Emulator** | The original MCOM.EXE v3.20 on an emulated 8086. Bring your own MCOM.EXE. |
 | 🖥 **Machines** | Every machine a monitor probe reports on the bus, alive or dead, with its health. |
 
+Your station's keys are also in the OS taskbar, between the recent applications and the open
+windows: microcom-sim's `strip.html`, framed by `APK:OS/Footer/intercom-strip`. Click latches,
+hold talks, and a caller glows amber. 🎧 joins the audio and ⤢ opens the Panels tab on the same
+station. Right-click 🎙 to take the keys off the taskbar; the **🎙 keys in the footer** switch in
+this window's header brings them back.
+
 ## The intercom
 
 The intercom comes from [microcom-sim](https://github.com/LikeDotAudio/microcom-sim), which is pinned

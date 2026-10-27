@@ -25,6 +25,8 @@ body { display: flex; flex-direction: column; background: var(--bg); color: var(
 .tabs a:hover { color: var(--text); }
 .tabs a.on { background: var(--accent); color: #111; font-weight: 600; }
 .status { margin-left: auto; color: var(--muted); font: 11px var(--mono); }
+.footer-keys { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; cursor: pointer; }
+.footer-keys[hidden] { display: none; }
 
 main { flex: 1; min-height: 0; display: flex; }
 #intercom { flex: 1; width: 100%; border: 0; background: var(--bg); }
