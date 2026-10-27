@@ -5,14 +5,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TRUNK-CASTER — the intercom and the machines</title>
+  <title>TRUNK-CASTER — the globe, the intercom and the machines</title>
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
   <header class="bar">
-    <div class="brand">📡 TRUNK<span>-CASTER</span></div>
+    <div class="brand">🌐 TRUNK<span>-CASTER</span></div>
     <!-- each tab is a #route, so the OS menus can open straight onto one (display.json in APK:OS/Intercom*) -->
     <nav class="tabs">
+      <span class="group" title="Trunk-Caster, the intercom trunking system: its published snapshot">
+        <a href="#globe" title="Trunk-Caster: every site on the globe and the trunks between the casters — its Continents, Crosspoints, Overlord, Panels, Racks, Relay, Simulator, Space, Usage, Users and About pages are in its own bar">🌐 Trunk-Caster</a>
+      </span>
       <span class="group" title="The Ward-Beck MicroCOM II intercom, in the browser (microcom-sim)">
         <a href="#matrix" title="The 2048-port matrix: 32 productions × 64 ports, routing and live audio — every tab shares one matrix">🎛 Matrix</a>
         <a href="#panel" title="M7880 key panels, talent turrets and the MicroCOM 2026 station and producer panels — panels in different tabs hear each other">🎙 Panels</a>
@@ -28,9 +31,11 @@
     <label class="footer-keys" id="footer-keys" hidden title="Your intercom station's keys in the OS taskbar, beside the tray — click latches, hold talks, a caller glows"><input type="checkbox"> 🎙 keys in the footer</label>
   </header>
   <main>
+    <iframe id="caster" title="Trunk-Caster" hidden></iframe>
     <iframe id="intercom" title="MicroCOM intercom" allow="microphone; autoplay; clipboard-write" hidden></iframe>
     <section id="machines" hidden></section>
   </main>
+  <div id="note" role="status" hidden></div>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

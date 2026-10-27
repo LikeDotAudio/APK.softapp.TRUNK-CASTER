@@ -1,18 +1,21 @@
 // Part of the APK.audio project — http://APK.audio — made by Anthony Kuzub
 // MIT Licence. Free, for everyone, for ever. Full text in LICENSE at the root.
+import { loadPage, pageOf, POP_NOTE } from './caster.js';
 import { mountMachines } from './machines.js';
 
 /**
  * TRUNK-CASTER
  *
- * One window for the intercom and the machines it runs on. The intercom is the
- * Ward-Beck MicroCOM II, revived in the browser by microcom-sim and built into
- * intercom/ (tools/build-intercom.sh): its matrix, panels, MicroCOM III and the
- * MCOM.EXE emulator each open in the frame below. The machines are every bare
- * metal box a monitor probe reports on the bus (machines.js).
+ * The intercom trunking system and the intercoms and machines it trunks, in
+ * one window. First Trunk-Caster itself — the Globe and its other pages, from
+ * its published snapshot (caster.js). Then the Ward-Beck MicroCOM II, revived
+ * in the browser by microcom-sim and built into intercom/
+ * (tools/build-intercom.sh): its matrix, panels, MicroCOM III and the MCOM.EXE
+ * emulator. Then the machines — every bare metal box a monitor probe reports
+ * on the bus (machines.js).
  *
  * The route is the hash, so the OS menus open straight onto a tab; no route is
- * the matrix. The intercom pages keep their state in this origin's IndexedDB
+ * the Globe. The intercom pages keep their state in this origin's IndexedDB
  * and share one matrix through a SharedWorker, so a panel opened from the OS
  * menu and one opened here are on the same frame.
  */
@@ -30,29 +33,56 @@ const myStation = () => {
 };
 
 const frame = document.getElementById('intercom');
+const caster = document.getElementById('caster');
 const machines = document.getElementById('machines');
+const note = document.getElementById('note');
 let unmount = null;
+let casterPage = null;
+
+function say(text) {
+  note.textContent = text;
+  note.hidden = !text;
+  clearTimeout(say.timer);
+  if (text) say.timer = setTimeout(() => (note.hidden = true), 6000);
+}
+
+function show(which) {
+  frame.hidden = which !== frame;
+  caster.hidden = which !== caster;
+  machines.hidden = which !== machines;
+}
 
 function route() {
-  const name = location.hash.slice(1) || 'matrix';
-  for (const a of document.querySelectorAll('.tabs a')) a.classList.toggle('on', a.getAttribute('href') === `#${name}`);
+  const name = location.hash.slice(1) || 'globe';
+  const page = pageOf(name);
+  const tab = page ? 'globe' : name;
+  for (const a of document.querySelectorAll('.tabs a')) a.classList.toggle('on', a.getAttribute('href') === `#${tab}`);
+  document.getElementById('status').textContent = '';
+  if (name !== 'machines') {
+    unmount?.();
+    unmount = null;
+  }
+  if (page) {
+    show(caster);
+    // the same page twice is left alone: it keeps where you had turned the globe to
+    if (casterPage !== page) {
+      casterPage = page;
+      loadPage(caster, page, { go: (p) => (location.hash = p === 'index' ? '#globe' : `#tc/${p}`), note: say }).catch((err) => say(`Trunk-Caster: ${err.message}`));
+    }
+    return;
+  }
   if (name === 'machines') {
-    frame.hidden = true;
-    machines.hidden = false;
+    show(machines);
     unmount ??= mountMachines(machines, document.getElementById('status'));
     return;
   }
-  unmount?.();
-  unmount = null;
-  machines.hidden = true;
-  frame.hidden = false;
+  show(frame);
   // the engine runs here, in the browser: said outright rather than left to the pages' probe of
   // /api/state, which on the OS's own server is an OS route and not mcommatrix's
   const mine = name === 'panel' ? myStation() : null;
-  const page = `intercom/${PAGES[name] ?? PAGES.matrix}?engine=local${mine ? `&p=${encodeURIComponent(mine.replace(' ', '/'))}` : ''}`;
+  const src = `intercom/${PAGES[name] ?? PAGES.matrix}?engine=local${mine ? `&p=${encodeURIComponent(mine.replace(' ', '/'))}` : ''}`;
   // the same page twice is left alone: reloading it would drop the panel's live audio
-  if (!frame.src.endsWith(page)) frame.src = page;
-  document.getElementById('status').textContent = '';
+  if (!frame.src.endsWith(src)) frame.src = src;
 }
 
 /** Framed by the OS: a switch for the keys in its footer (APK:OS/Footer/intercom-strip). */
@@ -71,6 +101,10 @@ function footerSwitch() {
   box.hidden = false;
 }
 
+// a snapshot page refused a pop-out (caster.js guard): say why rather than leave a blank window
+addEventListener('message', (ev) => {
+  if (ev.source === caster.contentWindow && ev.data?.source === 'trunk-caster-snapshot' && ev.data.note === 'pop') say(POP_NOTE);
+});
 addEventListener('hashchange', route);
 route();
 footerSwitch();
