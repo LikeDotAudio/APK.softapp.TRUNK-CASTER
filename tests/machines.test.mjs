@@ -1,6 +1,7 @@
 // Part of the APK.audio project — http://APK.audio — made by Anthony Kuzub
 // MIT Licence. Free, for everyone, for ever. Full text in LICENSE at the root.
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { health, judge, TRUST_MS } from '../js/machines.js';
@@ -47,9 +48,19 @@ test('health is the few numbers that say how a machine is, from the probe’s ow
   assert.deepEqual(health(rec({})).ips, [], 'a machine not yet heard has no numbers, not wrong ones');
 });
 
-test('the intercom build is the pinned microcom-sim, and carries no MCOM.EXE', () => {
+test('the intercom build is the pinned microcom-sim, and carries no MCOM.EXE', (t) => {
   const built = readFileSync(new URL('../intercom/BUILT-FROM', import.meta.url), 'utf8').trim();
   assert.match(built, /^[0-9a-f]{40}$/);
+  // PINNED means the SRC/microcom-sim gitlink, not "some commit". The index is
+  // asked rather than HEAD so a bump and its rebuild agree before they are
+  // committed together. Outside a git checkout there is no pin to compare.
+  let pinned = '';
+  try {
+    pinned = execFileSync('git', ['ls-files', '-s', 'SRC/microcom-sim'],
+      { cwd: new URL('..', import.meta.url), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split(/\s+/)[1] || '';
+  } catch { /* not a checkout */ }
+  if (!pinned) t.diagnostic('no SRC/microcom-sim gitlink here; BUILT-FROM checked for shape only');
+  else assert.equal(built, pinned, 'intercom/ was built from a different microcom-sim than SRC/microcom-sim pins: run tools/build-intercom.sh');
   for (const page of ['matrix.html', 'panel.html', 'mc3.html', 'emu.html']) assert.ok(existsSync(new URL(`../intercom/${page}`, import.meta.url)), page);
   assert.ok(!existsSync(new URL('../intercom/MCOM.EXE', import.meta.url)));
 });

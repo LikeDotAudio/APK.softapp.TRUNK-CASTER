@@ -31,5 +31,5 @@
 
 ## Not automated
 
-- Rebuilding `intercom/` after a submodule bump is by hand; nothing checks `BUILT-FROM` against the gitlink.
+- Rebuilding `intercom/` after a submodule bump is by hand (`tools/build-intercom.sh`); `npm test` fails until it is done, because it holds `BUILT-FROM` to the `SRC/microcom-sim` gitlink.
 - `SRC/trunk-caster-site` updates only when its upstream publishes and the pointer is bumped.

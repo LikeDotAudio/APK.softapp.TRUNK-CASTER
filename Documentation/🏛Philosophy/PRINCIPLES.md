@@ -13,13 +13,10 @@ What the TRUNK-CASTER window keeps, each with the code that keeps it. Ecosystem 
 | **Read-only.** The Machines tab offers no power, shell or deploy; those are writes to hardware and belong to a confirmed path the OS owns. | `mountMachines()` (`js/machines.js:93`) |
 | **No bus client of its own.** Machines are read from the OS's machine-bus store through `window.parent.OS`. | `shell()` (`js/machines.js:78`) |
 | **The intercom never probes the OS server.** Its pages are always framed with `?engine=local`. | `PAGES` / `route()` (`js/app.js:23`, :55) |
-| **Images copy, never build.** `intercom/` is microcom-sim's static build, tracked, with `BUILT-FROM` naming the commit. | `tools/build-intercom.sh` |
+| **Images copy, never build.** `intercom/` is microcom-sim's static build, tracked, with `BUILT-FROM` naming the commit; `npm test` fails when it is not the `SRC/microcom-sim` gitlink. | `tools/build-intercom.sh`; `tests/machines.test.mjs` |
 | **The private archive stays on the disk.** `SRC/microcom` is excluded from every image; a test checks the tracked build carries no MCOM.EXE. | APK.audio `.dockerignore`; `tests/machines.test.mjs:50` |
 
 ## Where it does not hold
 
-- **"Pinned" is not checked.** The test named *the intercom build is the pinned microcom-sim* only checks that
-  `BUILT-FROM` is a 40-hex SHA; it never compares it with the `SRC/microcom-sim` gitlink. On 2026-10-30 the
-  build was from `d87ae29` while the gitlink pointed at a later docs-only commit.
 - **The snapshot guard posts pop-out notes to `'*'`** (`js/caster.js`, `window.open` override).
 - **`SRC/trunk-caster-site` is generated** by Trunk-Caster's own publish step and is not edited here.
