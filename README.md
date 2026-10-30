@@ -69,6 +69,40 @@ and `telemetry`), in `APK:OS/Network/machine-bus`. This page reads that store th
   They are the next piece of work, and they go through a confirmed path the OS owns,
   not through a frame.
 
-```bash
-npm test
+## Layout
+
 ```
+index.html                 the window: tab bar, the caster frame, the intercom frame, the machines pane
+js/app.js                  routing by hash (#globe, #matrix, #panel, #mc3, #emu, #machines, or a Trunk-Caster page name)
+js/caster.js               fetches a snapshot page and frames it as srcdoc behind the guard (guardScript)
+js/machines.js             the Machines tab: reads window.parent.OS, alive = heard within TRUST_MS (5 min)
+css/app.css
+intercom/                  microcom-sim's static build — TRACKED; BUILT-FROM names its commit
+tools/build-intercom.sh    rebuilds intercom/ from SRC/microcom-sim (tsc --noEmit, vite build --mode static)
+tests/                     node --test: caster.test.mjs, machines.test.mjs
+SRC/trunk-caster-site      submodule: Trunk-Caster's public snapshot (twelve pages)
+SRC/microcom-sim           submodule: the public simulator the intercom/ build comes from
+SRC/microcom               submodule: the private archive (MCOM.EXE, decompile, specs) — kept out of every image
+```
+
+The intercom pages are always framed with `?engine=local` (`js/app.js`), so they run the matrix in the browser and never probe the OS server for a Python engine. The station chosen in the footer strip is shared through `localStorage` key `microcom.strip.station`, which the Panels tab reads to open on your own station.
+
+`SRC/trunk-caster-site` is written by Trunk-Caster's own publish step (its commits are `Publish pages <date>`), README included, so it is not edited here.
+
+## Tests
+
+```bash
+npm test     # node --test tests/*.test.mjs — 10 tests
+```
+
+They check that the Globe is the front door and every published page has a route, that the guard refuses every runtime call the snapshot makes while letting the snapshot's own files through, that a machine is alive only while it is heard, and that `intercom/` is the pinned microcom-sim build with no MCOM.EXE in it.
+
+## Philosophy
+
+- **A snapshot is never live.** A Trunk-Caster page is fetched and framed as `srcdoc` with a guard as its first script, so it can never reach the OS server's `/ws` or `/api/device/` (`js/caster.js`, `tests/caster.test.mjs`).
+- **Unreachable is dead; trust decays.** A machine is alive only while its probe's samples arrive; one quiet for five minutes is dead whatever it last said, and a retained `online` replayed at boot is *unheard* (`js/machines.js` `TRUST_MS`).
+- **Identity is the hostname, never the address** (`js/machines.js`).
+- **A frame may not write to hardware.** The Machines tab is read-only; power, shell and deploy are left to a confirmed path the OS owns.
+- **No bus client of its own.** The page reads the shell's machine-bus store through `window.parent.OS` rather than opening a second connection (`js/machines.js`).
+- **Images copy, never build.** `intercom/` is committed, as the CAD's `dist/` is, because the APK.audio images copy Softapps without running a build (`tools/build-intercom.sh`).
+- **The private archive stays on the disk.** `SRC/microcom` is a submodule to work on, excluded by the APK.audio root `.dockerignore`; a test checks the tracked build carries no MCOM.EXE.
