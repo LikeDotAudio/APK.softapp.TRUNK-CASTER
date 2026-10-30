@@ -106,3 +106,7 @@ They check that the Globe is the front door and every published page has a route
 - **No bus client of its own.** The page reads the shell's machine-bus store through `window.parent.OS` rather than opening a second connection (`js/machines.js`).
 - **Images copy, never build.** `intercom/` is committed, as the CAD's `dist/` is, because the APK.audio images copy Softapps without running a build (`tools/build-intercom.sh`).
 - **The private archive stays on the disk.** `SRC/microcom` is a submodule to work on, excluded by the APK.audio root `.dockerignore`; a test checks the tracked build carries no MCOM.EXE.
+
+<!-- wiki:smoke -->
+**Smoke test** — ✅ PASS 2/2 since 2026-10-30 12:51 EDT — [results](Documentation/%F0%9F%A7%A9Manual%20and%20Artifacts/SMOKE.md)
+<!-- /wiki:smoke -->
