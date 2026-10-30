@@ -102,7 +102,7 @@ They check that the Globe is the front door and every published page has a route
 - **A snapshot is never live.** A Trunk-Caster page is fetched and framed as `srcdoc` with a guard as its first script, so it can never reach the OS server's `/ws` or `/api/device/` (`js/caster.js`, `tests/caster.test.mjs`).
 - **Unreachable is dead; trust decays.** A machine is alive only while its probe's samples arrive; one quiet for five minutes is dead whatever it last said, and a retained `online` replayed at boot is *unheard* (`js/machines.js` `TRUST_MS`).
 - **Identity is the hostname, never the address** (`js/machines.js`).
-- **A frame may not write to hardware.** The Machines tab is read-only; power, shell and deploy are left to a confirmed path the OS owns.
+- **A frame may not write to hardware.** The Machines tab writes nothing: ⏻ ›_ ⤒ offer what the machine's agent (PLUGIN.MACHINE) says it can do, and hand the chosen action to the OS (`OS.machineCommand`), which confirms it with the person, logs it and publishes it as the broker's `apkaudio-operator` (PLAN-3394.01). The answer comes back retained and shows under the buttons.
 - **No bus client of its own.** The page reads the shell's machine-bus store through `window.parent.OS` rather than opening a second connection (`js/machines.js`).
 - **Images copy, never build.** `intercom/` is committed, as the CAD's `dist/` is, because the APK.audio images copy Softapps without running a build (`tools/build-intercom.sh`).
 - **The private archive stays on the disk.** `SRC/microcom` is a submodule to work on, excluded by the APK.audio root `.dockerignore`; a test checks the tracked build carries no MCOM.EXE.

@@ -51,6 +51,12 @@ tr.dead td:nth-child(2), tr.offline td:nth-child(2) { opacity: 1; color: var(--b
 .hot { color: var(--bad); font-weight: 600; }
 .acts button { padding: 2px 6px; margin-right: 2px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; }
 .acts button:disabled { opacity: 0.4; cursor: not-allowed; }
+.acts button:not(:disabled) { color: var(--text); cursor: pointer; }
+.acts button.on { border-color: var(--accent); color: var(--accent); }
+.acts .menu { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.acts .menu button { text-align: left; color: var(--text); }
+.acts .answer { max-width: 32ch; overflow-wrap: anywhere; }
+.acts .answer.bad { color: var(--bad); }
 .hint { color: var(--muted); font-size: 12px; max-width: 90ch; }
 .empty { max-width: 60ch; margin: 40px auto; text-align: center; color: var(--muted); }
 .empty h2 { color: var(--text); }

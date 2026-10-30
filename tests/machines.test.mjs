@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { health, judge, TRUST_MS } from '../js/machines.js';
+import { actionsFor, answerLine, health, judge, TRUST_MS } from '../js/machines.js';
 
 const NOW = 1_800_000_000_000;
 const rec = (over) => ({ host: 'render-01', probe: 'LinuxDesktop', status: null, statusAt: 0, telemetry: null, heardAt: 0, ...over });
@@ -63,4 +63,39 @@ test('the intercom build is the pinned microcom-sim, and carries no MCOM.EXE', (
   else assert.equal(built, pinned, 'intercom/ was built from a different microcom-sim than SRC/microcom-sim pins: run tools/build-intercom.sh');
   for (const page of ['matrix.html', 'panel.html', 'mc3.html', 'emu.html']) assert.ok(existsSync(new URL(`../intercom/${page}`, import.meta.url)), page);
   assert.ok(!existsSync(new URL('../intercom/MCOM.EXE', import.meta.url)));
+});
+
+// PLAN-3394.01 — the buttons offer what the machine's own agent says it can do.
+const detail = { hostname: 'render-01', power_method: 'os', commands: ['uptime', 'disk'], deploys: ['plugins'], macs: [{ interface: 'eno1', mac: 'aa:bb:cc:00:11:22' }] };
+
+test('no agent, no actions — and it says why', () => {
+  const a = actionsFor(rec({}), 'alive');
+  assert.deepEqual([a.power, a.run, a.deploy], [[], [], []]);
+  assert.match(a.why, /PLUGIN\.MACHINE/);
+});
+
+test('an alive machine with an agent offers its own power, commands and deploys', () => {
+  const a = actionsFor(rec({ detail }), 'alive');
+  assert.deepEqual(a.power.map((x) => x.action), ['cycle', 'off']);
+  assert.deepEqual(a.run.map((x) => x.name), ['uptime', 'disk']);
+  assert.deepEqual(a.deploy.map((x) => x.name), ['plugins']);
+  assert.equal(actionsFor(rec({ detail: { ...detail, power_method: 'none' } }), 'alive').power.length, 0, 'no power method, no power buttons');
+});
+
+test('a dead machine can only be woken, to the MAC it last published', () => {
+  const a = actionsFor(rec({ detail }), 'dead');
+  assert.deepEqual(a.power, [{ label: 'Power on — wake aa:bb:cc:00:11:22', verb: 'power', action: 'on', mac: 'aa:bb:cc:00:11:22' }]);
+  assert.deepEqual([a.run, a.deploy], [[], []]);
+  assert.match(actionsFor(rec({ detail: { ...detail, macs: [] } }), 'dead').why, /no MAC/);
+});
+
+test('the answer line says what, how it went, and when', () => {
+  const line = answerLine(rec({ answer: { verb: 'power', action: 'cycle', status: 'done', dry_run: true, detail: 'dry run: would run `systemctl reboot`', at_ms: NOW - 3000 } }), NOW);
+  assert.equal(line, 'power cycle: done (dry run) · dry run: would run `systemctl reboot` · 3 s ago');
+  assert.equal(answerLine(rec({})), '');
+});
+
+test('no button is left waiting for a phase 2', () => {
+  const src = readFileSync(new URL('../js/machines.js', import.meta.url), 'utf8');
+  assert.ok(!src.includes('disabled title="Phase 2"'));
 });
