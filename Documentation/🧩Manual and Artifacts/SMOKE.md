@@ -13,4 +13,4 @@ Is `INTERCOM.TRUNK-CASTER` deployed? Written by `.apk.scripts/smoke.py` from the
 
 Re-run: `python3 .apk.scripts/smoke.py PODS/POD.THIN/Softapps/HARDWARE_AND_NETWORK/INTERCOM.TRUNK-CASTER`
 
-<!-- smoke:sig f586d2ac0eb6 since 2026-10-30 12:51 EDT -->
+<!-- smoke:sig dd616dd8ad2b since 2026-10-30 12:51 EDT -->
