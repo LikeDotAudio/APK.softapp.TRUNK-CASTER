@@ -5,8 +5,8 @@ import { live, framesOf, siteOf } from '../view.js';
 
 /**
  * THE GLOBE — every site the caster publishes (trunk/Site/{slug}), the frames
- * at each (trunk/Device/Frame/{frame}, which carry lat/lon) and the trunks
- * between them (trunk/Trunk/{trunk}) as great-circle arcs, on an orthographic
+ * at each (trunk/Frame/{frame}: its device carries lat/lon) and the trunks
+ * between them (the trunks in those documents) as great-circle arcs, on an orthographic
  * globe that turns by itself and by drag. Land is data/land.json, the same
  * outline Trunk-Caster's own globe drew (RUST-RUNTIME/src/land.json): rings of
  * [lon, lat, lon, lat, …]. Beside it, from the caster's own views (ROAD-3453):

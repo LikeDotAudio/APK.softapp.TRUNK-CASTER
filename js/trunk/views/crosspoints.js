@@ -7,7 +7,7 @@ import * as C from '../../../vendor/apk-contracts/apk-contracts.mjs';
 
 /**
  * CROSS POINTS — every frame's closed crosspoints as the caster holds them
- * (trunk/Crosspoint/{frame}, written whole on each change), the Ward-Beck line
+ * (each trunk/Frame/{frame} document's crosspoints, written whole on each change), the Ward-Beck line
  * each one is (rendered through the contract's renderWardBeckLine), and the
  * crosspoint events as they happen, and each frame's tap strip — the gain on
  * every closed crosspoint and who holds it (trunk/View/Taps/{frame}, the old
@@ -20,7 +20,7 @@ export function create({ api, say }) {
   const closed = vtable([
     ['Frame', (r) => r.frame], ['Input', (r) => r.input], ['Output', (r) => r.output], ['Connection', (r) => el('code', {}, r.connection ?? '')],
     ['Ward-Beck', (r) => el('code', {}, wardBeck(store, r))], ['Since', (r) => ago(Date.parse(r.at) || 0)],
-  ], 'No closed crosspoint (trunk/Crosspoint/…).');
+  ], 'No closed crosspoint (trunk/Frame/…, its crosspoints).');
   const recent = live();
   const taps = live();
   const node = el(

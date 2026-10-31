@@ -6,7 +6,7 @@ import { vtable } from '../virtual.js';
 
 /**
  * USAGE — how much of the trunking is in use: each trunk's channels against
- * its capacity (trunk/Trunk/… with its connections), live connections per
+ * its capacity (the trunks of each trunk/Frame/… document, with their connections), live connections per
  * protocol (by the frame they start on), and the booking timeline
  * (trunk/Booking/…) with book and cancel (book, cancel_booking). The caster's
  * own views add the voice bandwidth per protocol and per trunk
@@ -17,7 +17,7 @@ export function create({ api, say }) {
   const trunks = vtable([
     ['Trunk', (t) => t.id], ['A', (t) => `${t.a_frame} C${t.a_caster ?? ''}`], ['B', (t) => `${t.b_frame} C${t.b_caster ?? ''}`],
     ['In use', (t) => meter(t.connections?.length ?? 0, t.capacity ?? 0)], ['Gain A / B', (t) => `${t.gain_a_db ?? 0} / ${t.gain_b_db ?? 0} dB`],
-  ], 'No trunk is up (trunk/Trunk/…).');
+  ], 'No trunk is up (trunk/Frame/…, its trunks).');
   const protocols = live();
   const bookings = vtable([
     ['Program', (b) => b.program], ['Frame / port', (b) => `${b.frame} ${b.port}`], ['Kind', (b) => b.kind], ['Who', (b) => b.who],

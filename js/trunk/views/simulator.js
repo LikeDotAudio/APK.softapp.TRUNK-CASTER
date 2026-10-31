@@ -8,7 +8,7 @@ import { vtable } from '../virtual.js';
  * THE SIMULATOR — Trunk-Caster's fader and simulated clock, the requests it
  * grants and the events it raises. Drives the caster with fader_quick (speed,
  * run/stop), clock (the simulated hour), fader_preset and connect / release;
- * shows the live connections (trunk/Connection/…) and every event
+ * shows the live connections (folded in trunk/Frame/…) and every event
  * (trunk/Event/…) since this OS connected. The caster's own read-only views
  * (ROAD-3453) fill the rest: its status (trunk/View/Status), the event presets
  * the fader can take (View/Presets) and the current run's report (View/Report,
@@ -21,7 +21,7 @@ export function create({ api, say }) {
     ['Kind', (c) => `${c.kind}${c.hops?.length ? ` · ${c.hops.length} hop${c.hops.length > 1 ? 's' : ''}` : ''}`],
     ['Granted', (c) => ago(c.granted_unix)], ['Why', (c) => c.why], ['Origin', (c) => c.origin],
     ['', (c) => commandButton('Release', () => api.command('release', { connection: c.id }), say)],
-  ], 'No live connection (trunk/Connection/…).');
+  ], 'No live connection (trunk/Frame/…, its connections).');
   const events = live();
   const status = live();
   const report = live();

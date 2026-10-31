@@ -19,7 +19,7 @@ import { live, framesOf } from '../view.js';
  *   hangup         release every live connection from this port
  *   page, none     drawn, not sent (pages are the next step)
  *
- * A key lights while a live connection (trunk/Connection/…) joins this port to
+ * A key lights while a live connection (in its from_frame's trunk/Frame/… document) joins this port to
  * its target, so the light is the caster's word, not the click's.
  *
  * WHERE A TARGET LANDS (ROAD-3453). In PANELS/connect.json a panel sits on a

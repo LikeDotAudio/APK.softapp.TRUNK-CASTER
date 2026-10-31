@@ -26,7 +26,7 @@ export function create() {
       sites.set(table([
         ['Site', (x) => x.site], ['Frames', (x) => String(x.frames)], ['User ports', (x) => String(x.ports)],
         ['Casters trunked', (x) => meter(x.casters - x.free, x.casters)],
-      ], Object.values(by).sort((a, b) => b.frames - a.frames), 'No frame is on the bus (trunk/Device/Frame/…).'));
+      ], Object.values(by).sort((a, b) => b.frames - a.frames), 'No frame is on the bus (trunk/Frame/…).'));
       frames.set(table([
         ['Frame', (f) => f.id], ['Protocol', (f) => f.protocol_name ?? f.protocol], ['Site', (f) => siteOf(f)],
         ['Casters', (f) => el('span', { class: 'tc-casters' }, (f.caster_status ?? []).map((c) => el('i', { class: c.state === 'trunked' ? 'on' : '', title: c.state === 'trunked' ? `C${c.index} → ${c.peer_frame} (${c.trunk})` : `C${c.index} free` })))],

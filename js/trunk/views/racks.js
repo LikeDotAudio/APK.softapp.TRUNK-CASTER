@@ -13,7 +13,7 @@ import { vlist } from '../virtual.js';
  * units, and only those in sight are drawn.
  */
 export function create({ api, say }) {
-  const none = el('p', { class: 'hint' }, 'No frame is on the bus (trunk/Device/Frame/…).');
+  const none = el('p', { class: 'hint' }, 'No frame is on the bus (trunk/Frame/…).');
   const racks = vlist((it) => (it.site !== undefined ? el('h2', { class: 'tc-rack-site' }, `${it.site} — ${it.count} frames`) : unit(it.frame)), (it) => it.key, 'tc-racks');
   const node = el(
     'div',

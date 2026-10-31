@@ -6,7 +6,7 @@ import { live } from '../view.js';
 /**
  * ONE PROTOCOL'S FRAME SIMULATOR — what PLUGIN.TRUNK_SIM says each of this
  * protocol's frames holds (trunk_sim/{protocol}/Frame/{frame}/state, SimFrame)
- * beside what the caster believes (trunk/Crosspoint/{frame}), and how the
+ * beside what the caster believes (trunk/Frame/{frame}, its crosspoints), and how the
  * double validation is going: lines applied (`…/ack`) and refused (`…/reject`,
  * with the last reason). A frame whose sim and caster disagree is marked —
  * the caster resends on a persistent mismatch, so a mark that stays is news.
