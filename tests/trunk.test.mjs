@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { routeOf, VIEWS } from '../js/trunk/routes.js';
 import { project, arc } from '../js/trunk/views/globe.js';
 import { joins, connectionOf } from '../js/trunk/views/deck.js';
-import { agree } from '../js/trunk/views/sim.js';
+import { agree, checkedIn } from '../js/trunk/views/sim.js';
 import { wardBeck } from '../js/trunk/views/crosspoints.js';
 import { trunkApi, TRUNK_API, casterWord } from '../js/trunk/bus.js';
 
@@ -70,6 +70,9 @@ test('a sim agrees with the caster when they hold the same crosspoints, in any o
   assert.ok(agree(a, { closed: [{ input: 'U03', output: 'C1', connection: 'x' }, { input: 'U01', output: 'U02' }] }));
   assert.ok(!agree(a, { closed: [{ input: 'U01', output: 'U02' }] }));
   assert.ok(agree({ closed: [] }, undefined));
+  assert.equal(checkedIn('1793469414 @APK-Shop'), 1793469414, 'the sim writes "<unix> @<host>"');
+  assert.equal(checkedIn('2026-10-31T17:51:19Z'), Date.parse('2026-10-31T17:51:19Z'));
+  assert.equal(checkedIn(undefined), 0);
 });
 
 test("a closed crosspoint's Ward-Beck line is the contract's rendering", () => {

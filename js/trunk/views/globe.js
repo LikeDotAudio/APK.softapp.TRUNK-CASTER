@@ -85,14 +85,20 @@ export function create(ctx) {
     const frames = framesOf(store);
     const at = Object.fromEntries(frames.map((f) => [f.id, where(f)]));
     // trunks
-    g.strokeStyle = css.getPropertyValue('--accent') || '#ffa600'; g.lineWidth = 1.6;
-    for (const t of Object.values(store.trunks)) {
+    // many trunks: thin and translucent, so the land and the sites still read through them
+    const trunks = Object.values(store.trunks);
+    g.strokeStyle = css.getPropertyValue('--accent') || '#ffa600'; g.lineWidth = trunks.length > 200 ? 0.7 : 1.6;
+    g.globalAlpha = trunks.length > 200 ? 0.18 : 0.9;
+    for (const t of trunks) {
       const a = at[t.a_frame], b = at[t.b_frame];
       if (a && b) line(g, P, arc(a, b));
     }
-    // sites (or frames when the caster has published no sites)
-    const sites = Object.values(store.sites);
-    const dots = sites.length ? sites.map((s) => ({ p: where(s), r: s.tier === 'capital' ? 4 : s.tier === 'province' ? 3 : 2, name: s.name })) : frames.map((f) => ({ p: where(f), r: 2.5, name: f.id }));
+    g.globalAlpha = 1;
+    // every frame a dot, and every site the caster has published a labelled one over it
+    const dots = [
+      ...frames.map((f) => ({ p: where(f), r: 1.8, name: f.id })),
+      ...Object.values(store.sites).map((s) => ({ p: where(s), r: s.tier === 'capital' ? 4 : s.tier === 'province' ? 3 : 2.5, name: s.name, label: true })),
+    ];
     g.font = '10px system-ui';
     for (const d of dots) {
       if (!d.p) continue;
@@ -100,7 +106,7 @@ export function create(ctx) {
       if (!v) continue;
       g.fillStyle = '#dce4ee';
       g.beginPath(); g.arc(x, y, d.r, 0, 2 * Math.PI); g.fill();
-      if (d.r >= 4) g.fillText(d.name, x + 6, y + 3);
+      if (d.label) g.fillText(d.name, x + 6, y + 3);
     }
   }
   raf = requestAnimationFrame(frame);

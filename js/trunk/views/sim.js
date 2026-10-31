@@ -34,7 +34,7 @@ export function create({ param }) {
         ['Applied / rejected', (id) => (sims[id] ? `${sims[id].applied ?? 0} / ${sims[id].rejects ?? 0}` : '—')],
         ['Acks · rejects heard', (id) => (wire[id] ? `${wire[id].acks} · ${wire[id].rejects}` : '—')],
         ['Last reject', (id) => (wire[id]?.lastReject ? el('code', {}, Array.isArray(wire[id].lastReject) ? wire[id].lastReject[0] : String(wire[id].lastReject)) : '—')],
-        ['Checked in', (id) => ago(Date.parse(sims[id]?.checked_in_at ?? '') || 0)],
+        ['Checked in', (id) => ago(checkedIn(sims[id]?.checked_in_at))],
       ], ids, `No ${name} frame is on the bus: is Plugin-TRUNK_SIM running with this protocol?`));
     },
   };
@@ -46,4 +46,12 @@ export function agree(sim, caster) {
   const a = new Set((sim?.closed ?? []).map(key));
   const b = new Set((caster?.closed ?? []).map(key));
   return a.size === b.size && [...a].every((k) => b.has(k));
+}
+
+/** SimFrame.checked_in_at as unix seconds: the sim writes "<unix> @<host>"; an ISO time is read too. */
+export function checkedIn(v) {
+  if (v === undefined || v === null || v === '') return 0;
+  const n = Number.parseInt(String(v), 10);
+  if (Number.isFinite(n) && /^\d{9,}/.test(String(v).trim())) return n;
+  return Date.parse(String(v)) || 0;
 }
