@@ -9,6 +9,6 @@
   "entry": "index.html",
   "tech": "web",
   "app": "APK:Softapps/HARDWARE_AND_NETWORK/INTERCOM.TRUNK-CASTER/index.html",
-  "description": "INTERCOM: TRUNK-CASTER — the intercom trunking system on a globe (Trunk-Caster's published snapshot), the Ward-Beck MicroCOM II intercom it trunks (matrix, panels, MicroCOM III, the MCOM.EXE emulator), and the bare metal machines it runs on, alive or dead off the bus.",
+  "description": "INTERCOM: TRUNK-CASTER — the intercom trunking system on the bus (PLUGIN.TRUNK_CASTER and PLUGIN.TRUNK_SIM, the trunk contract): its Globe, Relay, Simulator, Cross Points, Usage, Space, Racks, Users and Analyzer, every Stream Deck panel and every protocol's frame simulator, each also a window of its own in the Intercom menu; the Ward-Beck MicroCOM II intercom it trunks (matrix, panels, MicroCOM III, the MCOM.EXE emulator); and the bare metal machines it runs on, alive or dead off the bus.",
   "autostart": false
 }

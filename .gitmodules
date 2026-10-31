@@ -4,6 +4,3 @@
 [submodule "SRC/microcom"]
 	path = SRC/microcom
 	url = https://github.com/LikeDotAudio/microcom.git
-[submodule "SRC/trunk-caster-site"]
-	path = SRC/trunk-caster-site
-	url = https://github.com/onediversifiedanthony/trunk-caster-site.git

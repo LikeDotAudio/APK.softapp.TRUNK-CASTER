@@ -6,8 +6,10 @@ What the TRUNK-CASTER window keeps, each with the code that keeps it. Ecosystem 
 
 | Principle | Kept by |
 |---|---|
-| **A snapshot is never live.** A Trunk-Caster page is fetched and framed as `srcdoc`, with a guard as its first script that refuses every fetch, XHR, beacon, EventSource and WebSocket that is not one of the snapshot's own files — so it can never reach the OS server's `/ws` or `/api/device/`. | `guardScript()` (`js/caster.js:69`), `framed()` (:87); `tests/caster.test.mjs` |
-| **Say what is missing instead of failing blank.** Runtime links and pop-outs answer with a note that the runtime is not here. | `RUNTIME_NOTE`, `POP_NOTE` (`js/caster.js:35`–:36), `linkKind()` (:46) |
+| **The caster speaks the bus (ROAD-3440).** Every Trunk-Caster view reads the shell's trunk store (`APK:OS/Network/trunk-bus`) and sends commands through the shell, which checks each one against the `trunk` contract and sends it as the person signed in. The caster plugin is the agent between a person and the frames. | `trunkApi()` (`js/trunk/bus.js`), `mountView()` (`js/trunk/view.js`); `tests/trunk.test.mjs` |
+| **A light is the caster's word, not the click's.** A Stream Deck key lights while a live connection joins its port to its target. | `joins()` (`js/trunk/views/deck.js`) |
+| **Say what is missing instead of failing blank.** Outside the shell, with an OS that keeps no trunk store, or one of another API version, a view says which. | `trunkApi()` (`js/trunk/bus.js`) |
+| **Windows from data, never a list in code.** One OS window per view, Stream Deck panel and protocol, written from the panel definitions and the caster plugin's protocol table; `--check` holds them. | `tools/build-trunk-windows.mjs`; `tests/trunk.test.mjs` |
 | **Unreachable is dead; trust decays.** A machine is alive only while samples arrive; quiet for five minutes is dead whatever it last said; a retained `online` replayed at boot is *unheard*. | `TRUST_MS` (`js/machines.js:27`), `judge()` (:30); `tests/machines.test.mjs` |
 | **Identity is the hostname, never the address.** | `js/machines.js` (rows keyed by `{host}`) |
 | **The buttons declare, the shell sends.** ⏻ ›_ ⤒ offer what the machine's own agent lists in its `detail`; the frame writes nothing and hands the choice to the OS's confirmed, logged `OS.machineCommand`. What a button asks is held to the SDK's machine_command contract. | `actionsFor()`, `mountMachines()` (`js/machines.js`); `tests/contract.test.mjs` |
@@ -19,8 +21,8 @@ What the TRUNK-CASTER window keeps, each with the code that keeps it. Ecosystem 
 
 ## Where it does not hold
 
-- **The snapshot guard posts pop-out notes to `'*'`** (`js/caster.js`, `window.open` override).
-- **`SRC/trunk-caster-site` is generated** by Trunk-Caster's own publish step and is not edited here.
+- **Trunk commands are not confirmed one by one.** A connect or release is sent as soon as it is asked (signed in only); the caster decides. Only the global crosspoint reset asks first.
+- **The windows' data is read from two other trees** (PLUGIN.TRUNK_CASTER's `data/`, INTERCOM.Caster's `PANELS/`); `build-trunk-windows.mjs` needs the monorepo.
 - **No CI workflow.** `npm test` is the one local check, run by hand before a push like the root's checks.
 - **The contract and OS-store tests need the monorepo** above this checkout (`contracts/`, `PODS/POD.THIN/OS`); in a
   standalone clone they skip and say so.

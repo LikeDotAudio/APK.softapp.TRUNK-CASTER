@@ -5,17 +5,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TRUNK-CASTER — the globe, the intercom and the machines</title>
+  <title>TRUNK-CASTER — the trunks, the intercom and the machines</title>
   <link rel="stylesheet" href="vendor/apk-contracts/apk-tokens.css">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
   <header class="bar">
     <div class="brand">🌐 TRUNK<span>-CASTER</span></div>
-    <!-- each tab is a #route, so the OS menus can open straight onto one (display.json in APK:OS/Intercom*) -->
+    <!-- each tab is a #route, so the OS menus can open straight onto one (display.json in APK:OS) -->
     <nav class="tabs">
-      <span class="group" title="Trunk-Caster, the intercom trunking system: its published snapshot">
-        <a href="#globe" title="Trunk-Caster: every site on the globe and the trunks between the casters — its Continents, Crosspoints, Overlord, Panels, Racks, Relay, Simulator, Space, Usage, Users and About pages are in its own bar">🌐 Trunk-Caster</a>
+      <span class="group" title="Trunk-Caster on the bus: PLUGIN.TRUNK_CASTER and PLUGIN.TRUNK_SIM, read through the shell">
+        <a href="#globe" title="Every site, the frames at each and the trunks between the casters">🌐 Globe</a>
+        <a href="#relay" title="The local sound-card relay: devices on matrix ports, and its events">🔁 Relay</a>
+        <a href="#simulator" title="The fader and the simulated clock, live connections and events">🎚 Simulator</a>
+        <a href="#crosspoints" title="Every frame's closed crosspoints as Ward-Beck lines">✳ Cross Points</a>
+        <a href="#usage" title="Trunks against capacity, connections per protocol, bookings">📈 Usage</a>
+        <a href="#space" title="Frames as capacity: free and trunked casters per site">🛰 Space</a>
+        <a href="#racks" title="Frames in racks: ports, names and who is on them">🗄 Racks</a>
+        <a href="#users" title="Who holds what, who asked whom">👥 Users</a>
+        <a href="#analyzer" title="Captures of the caster's traffic">🔬 Analyzer</a>
+        <select id="decks" title="A Stream Deck panel"><option value="">🎛 Decks…</option></select>
+        <select id="sims" title="One protocol's frame simulator"><option value="">🧪 Sims…</option></select>
       </span>
       <span class="group" title="The Ward-Beck MicroCOM II intercom, in the browser (microcom-sim)">
         <a href="#matrix" title="The 2048-port matrix: 32 productions × 64 ports, routing and live audio — every tab shares one matrix">🎛 Matrix</a>
@@ -32,7 +42,7 @@
     <label class="footer-keys" id="footer-keys" hidden title="Your intercom station's keys in the OS taskbar, beside the tray — click latches, hold talks, a caller glows"><input type="checkbox"> 🎙 keys in the footer</label>
   </header>
   <main>
-    <iframe id="caster" title="Trunk-Caster" hidden></iframe>
+    <section id="trunk" hidden></section>
     <iframe id="intercom" title="MicroCOM intercom" allow="microphone; autoplay; clipboard-write" hidden></iframe>
     <section id="machines" hidden></section>
   </main>

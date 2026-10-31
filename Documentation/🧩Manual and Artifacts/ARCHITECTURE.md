@@ -6,7 +6,10 @@ Open **Intercom** › **TRUNK-CASTER** (🌐) from the OS menu, or one of its ta
 
 | Hash | Tab | Source |
 |---|---|---|
-| `#globe` (default) or a page name (`continents`, `crosspoints`, `overlord`, `panels`, `racks`, `relay`, `simulator`, `space`, `usage`, `users`, `about`) | 🌐 Trunk-Caster | `SRC/trunk-caster-site/<page>.html`, framed as `srcdoc` |
+| `#globe` (default) · `#relay` · `#simulator` · `#crosspoints` · `#usage` · `#space` · `#racks` · `#users` · `#analyzer` | the Trunk-Caster views | `js/trunk/views/<view>.js`, off the shell's trunk store |
+| `#deck/<model>` | one Stream Deck panel | `js/trunk/views/deck.js` + `data/decks/<model>.json` |
+| `#sim/<protocol>` | one protocol's frame simulator | `js/trunk/views/sim.js` |
+| `#tc`, `#tc/<page>` | the old snapshot routes | land on the view that replaced the page (`js/trunk/routes.js`) |
 | `#matrix` · `#panel` · `#mc3` · `#emu` | 🎛 Matrix · 🎙 Panels · 🗂 MicroCOM III · 💾 Emulator | `intercom/<page>.html?engine=local` |
 | `#machines` | 🖥 Machines | `js/machines.js` |
 
@@ -18,11 +21,12 @@ shared through `localStorage` `microcom.strip.station`, which the Panels tab ope
 
 ```
 index.html ─▶ js/app.js route()
-   ├─ Trunk-Caster page ─▶ js/caster.js loadPage():
-   │     fetch SRC/trunk-caster-site/<page>.html → framed(): <base> + guardScript() first → iframe.srcdoc
-   │     (about:srcdoc is not "served over http", so the page does not count itself live;
-   │      the guard refuses anything that is not a snapshot file)
-   │     links: another snapshot page → go(page); a runtime link → note(RUNTIME_NOTE)
+   ├─ Trunk-Caster view ─▶ js/trunk/routes.js routeOf() → mountView(create) (js/trunk/view.js):
+   │     trunkApi(window.parent.OS) → OS.trunkApi v1 { snapshot, watch, command, signedIn }
+   │     the shell (APK:OS/Network/trunk-bus) keeps every retained trunk / trunk_sim document
+   │       (contracts/TRUNK.md) and a ring of events; view.update(store) on every change (≤ 4/s)
+   │     a command → OS.trunkApi.command(verb, args): parseTrunkCommand, `who` = the person signed in,
+   │       publish trunk/outgoing/command, resolve on trunk/incoming/result (or "unanswered" after 15 s)
    ├─ intercom tab ─▶ iframe intercom/<matrix|panel|mc3|emu>.html?engine=local
    │     (microcom-sim's local engine in a SharedWorker; every window shares one matrix)
    └─ machines ─▶ mountMachines(): machineApi(window.parent.OS) → { list, read, watch, command }
@@ -39,13 +43,14 @@ index.html ─▶ js/app.js route()
 
 | Path | Role |
 |---|---|
-| `index.html`, `css/app.css` | The window: tab bar, caster frame, intercom frame, machines pane |
+| `index.html`, `css/app.css` | The window: tab bar, Trunk-Caster pane, intercom frame, machines pane |
 | `js/app.js` | Hash routing, `?engine=local`, the footer-keys switch |
-| `js/caster.js` | Snapshot framing and the guard |
+| `js/trunk/` | The Trunk-Caster views: `bus.js` (the shell's trunkApi), `view.js`, `routes.js`, `dom.js`, `views/*.js` |
+| `data/` | Written by `tools/build-trunk-windows.mjs`: `protocols.json`, `decks/`, `land.json` |
+| `tools/build-trunk-windows.mjs` | One APK:OS window per view, Stream Deck and protocol, from data; `--check` |
 | `js/machines.js` | The Machines tab |
 | `intercom/` | microcom-sim's static build (tracked); `BUILT-FROM` |
 | `tools/build-intercom.sh` | Rebuilds `intercom/` from `SRC/microcom-sim` |
-| `tests/` | `node --test` (`npm test`): `caster`, `machines`, `contract` (machine_command vectors + TS twin from the root `contracts/`), `shell` (`machineApi` + the OS's machine-bus store) |
-| `SRC/trunk-caster-site` | Submodule: Trunk-Caster's public snapshot (generated upstream) |
+| `tests/` | `node --test` (`npm test`): `trunk`, `machines`, `contract` (machine_command vectors + TS twin from the root `contracts/`), `shell` (`machineApi` + the OS's machine-bus store) |
 | `SRC/microcom-sim` | Submodule: the public simulator |
 | `SRC/microcom` | Submodule: the private archive — never in an image |

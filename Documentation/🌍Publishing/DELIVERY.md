@@ -9,21 +9,21 @@
 
 ## Test
 
-`npm test` → `node --test tests/*.test.mjs` — 23 tests, the one local check (no CI workflow). On 2026-10-31: 23 pass (`intercom/` rebuilt from `SRC/microcom-sim` `5bbd846`, and the machine-store test loads `vendor/apk-contracts/apk-contracts.global.js` before the OS's `machine-bus.js`). Node ≥ 22.18. Monorepo smoke run:
+`npm test` → `node --test tests/*.test.mjs` — 26 tests, the one local check (no CI workflow). On 2026-10-31: 26 pass after ROAD-3440 (`intercom/` rebuilt from `SRC/microcom-sim` `5bbd846`, and the machine-store test loads `vendor/apk-contracts/apk-contracts.global.js` before the OS's `machine-bus.js`). Node ≥ 22.18. Monorepo smoke run:
 [SMOKE.md](../%F0%9F%A7%A9Manual%20and%20Artifacts/SMOKE.md).
 
 ## Ship
 
 - **Repository**: `https://github.com/LikeDotAudio/APK.softapp.TRUNK-CASTER` — a submodule at
-  `PODS/POD.THIN/Softapps/HARDWARE_AND_NETWORK/INTERCOM.TRUNK-CASTER`, with three submodules of its own
-  (`SRC/microcom-sim`, `SRC/microcom` private, `SRC/trunk-caster-site`). No GitHub workflow.
+  `PODS/POD.THIN/Softapps/HARDWARE_AND_NETWORK/INTERCOM.TRUNK-CASTER`, with two submodules of its own
+  (`SRC/microcom-sim`, `SRC/microcom` private). No GitHub workflow.
 - **Image**: `web-static` (`PODS/POD.THIN/WEB.Frontend-Assets/Docker/Dockerfile`) copies the Softapps tree; the root
   `.dockerignore` drops `**/INTERCOM.TRUNK-CASTER/SRC/microcom`, so the Ward-Beck archive never ships. Storage-Portal
   (`:8080`) proxies `/APK:Softapps/` to web-static (PLAN-3421.01).
 - **Where it lands**: `http://127.0.0.1:8080/APK:Softapps/HARDWARE_AND_NETWORK/INTERCOM.TRUNK-CASTER/index.html`
   (200 on 2026-10-30), opened by the OS Intercom menu and the footer strip.
-- **Public relatives**: microcom-sim deploys itself to https://likedotaudio.github.io/microcom-sim/; the
-  trunk-caster-site snapshot is published by Trunk-Caster's own step, outside this repo.
+- **Public relatives**: microcom-sim deploys itself to https://likedotaudio.github.io/microcom-sim/. Trunk-Caster's
+  views need the shell's bus, so on a public page they say there is no bus.
 
 ## After an edit
 
@@ -32,7 +32,7 @@
 ## Not automated
 
 - Rebuilding `intercom/` after a submodule bump is by hand (`tools/build-intercom.sh`); `npm test` fails until it is done, because it holds `BUILT-FROM` to the `SRC/microcom-sim` gitlink.
-- `SRC/trunk-caster-site` updates only when its upstream publishes and the pointer is bumped.
+- After a Stream Deck definition or the caster's protocol table changes, run `node tools/build-trunk-windows.mjs` and rebuild the OS manifests (`WEB.OsApi/SRC/build_os_manifests.py`).
 
 ## Delivered 2026-10-31: portable file names (no `:` `|` or case twins)
 

@@ -1,14 +1,17 @@
 // Part of the APK.audio project — http://APK.audio — made by Anthony Kuzub
 // MIT Licence. Free, for everyone, for ever. Full text in LICENSE at the root.
-import { loadPage, pageOf, POP_NOTE } from './caster.js';
 import { mountMachines } from './machines.js';
+import { routeOf, VIEWS } from './trunk/routes.js';
+import { mountView } from './trunk/view.js';
 
 /**
  * TRUNK-CASTER
  *
  * The intercom trunking system and the intercoms and machines it trunks, in
- * one window. First Trunk-Caster itself — the Globe and its other pages, from
- * its published snapshot (caster.js). Then the Ward-Beck MicroCOM II, revived
+ * one window. First Trunk-Caster itself — the Globe, Relay, Simulator, Cross
+ * Points, Usage, Space, Racks, Users and Analyzer, every Stream Deck panel and
+ * every protocol's frame simulator — each read off the bus through the shell
+ * (js/trunk/, ROAD-3440), from PLUGIN.TRUNK_CASTER and PLUGIN.TRUNK_SIM. Then the Ward-Beck MicroCOM II, revived
  * in the browser by microcom-sim and built into intercom/
  * (tools/build-intercom.sh): its matrix, panels, MicroCOM III and the MCOM.EXE
  * emulator. Then the machines — every bare metal box a monitor probe reports
@@ -33,11 +36,12 @@ const myStation = () => {
 };
 
 const frame = document.getElementById('intercom');
-const caster = document.getElementById('caster');
+const trunk = document.getElementById('trunk');
 const machines = document.getElementById('machines');
 const note = document.getElementById('note');
 let unmount = null;
-let casterPage = null;
+let unmountTrunk = null;
+let trunkRoute = null;
 
 function say(text) {
   note.textContent = text;
@@ -48,29 +52,34 @@ function say(text) {
 
 function show(which) {
   frame.hidden = which !== frame;
-  caster.hidden = which !== caster;
+  trunk.hidden = which !== trunk;
   machines.hidden = which !== machines;
 }
 
 function route() {
   const name = location.hash.slice(1) || 'globe';
-  const page = pageOf(name);
-  const tab = page ? 'globe' : name;
+  const view = routeOf(name);
+  const tab = view ? view.tab : name;
   for (const a of document.querySelectorAll('.tabs a')) a.classList.toggle('on', a.getAttribute('href') === `#${tab}`);
+  for (const s of document.querySelectorAll('.tabs select')) s.value = s.querySelector(`option[value="#${name}"]`) ? `#${name}` : '';
   document.getElementById('status').textContent = '';
   if (name !== 'machines') {
     unmount?.();
     unmount = null;
   }
-  if (page) {
-    show(caster);
-    // the same page twice is left alone: it keeps where you had turned the globe to
-    if (casterPage !== page) {
-      casterPage = page;
-      loadPage(caster, page, { go: (p) => (location.hash = p === 'index' ? '#globe' : `#tc/${p}`), note: say }).catch((err) => say(`Trunk-Caster: ${err.message}`));
+  if (view) {
+    show(trunk);
+    // the same view twice is left alone: it keeps where you had turned the globe to
+    if (trunkRoute !== view.key) {
+      unmountTrunk?.();
+      trunkRoute = view.key;
+      unmountTrunk = mountView(trunk, VIEWS[view.view], { say, param: view.param, status: document.getElementById('status') });
     }
     return;
   }
+  unmountTrunk?.();
+  unmountTrunk = null;
+  trunkRoute = null;
   if (name === 'machines') {
     show(machines);
     unmount ??= mountMachines(machines, document.getElementById('status'));
@@ -101,10 +110,22 @@ function footerSwitch() {
   box.hidden = false;
 }
 
-// a snapshot page refused a pop-out (caster.js guard): say why rather than leave a blank window
-addEventListener('message', (ev) => {
-  if (ev.source === caster.contentWindow && ev.data?.source === 'trunk-caster-snapshot' && ev.data.note === 'pop') say(POP_NOTE);
-});
+// the Stream Deck and Sims pickers are routes too, filled from the data the tool wrote
+async function fillPickers() {
+  const load = async (path) => {
+    try {
+      const r = await fetch(path);
+      return r.ok ? r.json() : [];
+    } catch {
+      return [];
+    }
+  };
+  const decks = await load('data/decks/index.json');
+  const sims = await load('data/protocols.json');
+  document.getElementById('decks').append(...decks.map((d) => Object.assign(document.createElement('option'), { value: `#deck/${d.model}`, textContent: d.name })));
+  document.getElementById('sims').append(...sims.map((p) => Object.assign(document.createElement('option'), { value: `#sim/${p.id}`, textContent: p.name })));
+}
+fillPickers().then(route);
+for (const s of document.querySelectorAll('.tabs select')) s.addEventListener('change', () => s.value && (location.hash = s.value));
 addEventListener('hashchange', route);
-route();
 footerSwitch();

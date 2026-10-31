@@ -1,0 +1,26 @@
+[
+  {
+    "model": "streamdeck-mini",
+    "name": "Stream Deck mini · Field mini",
+    "rows": 2,
+    "cols": 3
+  },
+  {
+    "model": "streamdeck-mk2",
+    "name": "Stream Deck mk2 · Camera position MK2",
+    "rows": 3,
+    "cols": 5
+  },
+  {
+    "model": "streamdeck-plus",
+    "name": "Stream Deck plus · Audio position Plus",
+    "rows": 2,
+    "cols": 4
+  },
+  {
+    "model": "streamdeck-xl",
+    "name": "Stream Deck xl · Director XL",
+    "rows": 4,
+    "cols": 8
+  }
+]

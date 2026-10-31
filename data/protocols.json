@@ -1,0 +1,114 @@
+[
+  {
+    "id": "2-wire",
+    "name": "2-Wire"
+  },
+  {
+    "id": "4-wire",
+    "name": "4-Wire"
+  },
+  {
+    "id": "aes67",
+    "name": "AES67"
+  },
+  {
+    "id": "audiocom",
+    "name": "Audiocom"
+  },
+  {
+    "id": "bolero-dect",
+    "name": "Bolero DECT"
+  },
+  {
+    "id": "dante",
+    "name": "Dante"
+  },
+  {
+    "id": "digital-party-line",
+    "name": "Digital-Party-Line"
+  },
+  {
+    "id": "fiber-media-network",
+    "name": "Fiber-Media-Network"
+  },
+  {
+    "id": "freespeak-dect",
+    "name": "FreeSpeak DECT"
+  },
+  {
+    "id": "gpio",
+    "name": "GPIO"
+  },
+  {
+    "id": "helixnet",
+    "name": "HelixNet"
+  },
+  {
+    "id": "ivc-32",
+    "name": "IVC-32 IP"
+  },
+  {
+    "id": "legacy-compressed-voip",
+    "name": "Legacy-Compressed-VoIP"
+  },
+  {
+    "id": "livewire",
+    "name": "Livewire"
+  },
+  {
+    "id": "mediornet",
+    "name": "MediorNet"
+  },
+  {
+    "id": "omega",
+    "name": "Omega"
+  },
+  {
+    "id": "omneo",
+    "name": "OMNEO"
+  },
+  {
+    "id": "rvon",
+    "name": "RVON"
+  },
+  {
+    "id": "simulator",
+    "name": "SIMULATOR"
+  },
+  {
+    "id": "sip",
+    "name": "SIP"
+  },
+  {
+    "id": "smpte-2110",
+    "name": "SMPTE ST 2110"
+  },
+  {
+    "id": "snmp",
+    "name": "SNMP"
+  },
+  {
+    "id": "tetra",
+    "name": "TETRA"
+  },
+  {
+    "id": "trunked-radio",
+    "name": "Trunked-Radio"
+  },
+  {
+    "id": "vendor-aoip",
+    "name": "Vendor-AoIP"
+  },
+  {
+    "id": "vendor-ip-transport",
+    "name": "Vendor-IP-Transport"
+  },
+  {
+    "id": "wardbeck-line",
+    "name": "Ward-Beck Line"
+  },
+  {
+    "id": "wireless-beltpack",
+    "name": "Wireless-Beltpack"
+  }
+]
