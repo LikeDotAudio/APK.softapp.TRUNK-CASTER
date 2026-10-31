@@ -12,12 +12,8 @@
     "name": "AES67"
   },
   {
-    "id": "audiocom",
-    "name": "Audiocom"
-  },
-  {
-    "id": "bolero-dect",
-    "name": "Bolero DECT"
+    "id": "clear-com",
+    "name": "Clear-Com"
   },
   {
     "id": "dante",
@@ -32,44 +28,24 @@
     "name": "Fiber-Media-Network"
   },
   {
-    "id": "freespeak-dect",
-    "name": "FreeSpeak DECT"
-  },
-  {
     "id": "gpio",
     "name": "GPIO"
   },
   {
-    "id": "helixnet",
-    "name": "HelixNet"
-  },
-  {
-    "id": "ivc-32",
-    "name": "IVC-32 IP"
+    "id": "intracom",
+    "name": "Intracom"
   },
   {
     "id": "legacy-compressed-voip",
     "name": "Legacy-Compressed-VoIP"
   },
   {
-    "id": "livewire",
-    "name": "Livewire"
+    "id": "relay",
+    "name": "Local Relay"
   },
   {
-    "id": "mediornet",
-    "name": "MediorNet"
-  },
-  {
-    "id": "omega",
-    "name": "Omega"
-  },
-  {
-    "id": "omneo",
-    "name": "OMNEO"
-  },
-  {
-    "id": "rvon",
-    "name": "RVON"
+    "id": "riedel",
+    "name": "Riedel"
   },
   {
     "id": "simulator",
@@ -88,8 +64,8 @@
     "name": "SNMP"
   },
   {
-    "id": "tetra",
-    "name": "TETRA"
+    "id": "telos-infinity",
+    "name": "Telos-Infinity"
   },
   {
     "id": "trunked-radio",

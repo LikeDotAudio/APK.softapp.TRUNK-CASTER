@@ -119,7 +119,7 @@ export function create(ctx) {
           ['Site', (x) => x.name],
           ['Tier', (x) => x.tier],
           ['Country', (x) => x.country],
-          ['Frames', (x) => String(bySite[x.slug]?.length ?? x.frames ?? 0)],
+          ['Frames', (x) => String((bySite[x.name] ?? bySite[x.slug])?.length ?? x.frames ?? 0)],
         ], sites, 'The caster has published no sites (trunk/Site/…).')),
       );
     },

@@ -9,10 +9,8 @@
  *
  * WHAT IT READS (nothing here lists a protocol or a panel):
  *   PLUGIN.TRUNK_CASTER/SRC/data/protocols.json        the caster's protocol table (alias → id, name)
- *   PLUGIN.TRUNK_CASTER/SRC/data/seed/KNOWN PROTOCOLS/  the repertoire's folders: every leaf folder is a
- *                                                       protocol — its row in the table, or (no row) itself,
- *                                                       as the caster keeps it; a leaf straight under a
- *                                                       VENDOR group is a vendor with no protocol folder
+ *   PLUGIN.TRUNK_CASTER/SRC/data/seed/                  KNOWN PROTOCOLS/ and TRUNK-RELAY/relay.json: the
+ *                                                       repertoire, discovered exactly as the caster does
  *   INTERCOM.Caster/SRC/PANELS/streamdeck-*.json        the Stream Deck panel definitions
  *   INTERCOM.Caster/SRC/RUST-RUNTIME/src/land.json      the globe's land outline
  *
@@ -53,34 +51,61 @@ export const VIEWS = [
 const TRUNK_SOURCE = 'Read off the bus through the shell (APK:OS/Network/trunk-bus): PLUGIN.TRUNK_CASTER and PLUGIN.TRUNK_SIM speak the trunk contract (contracts/TRUNK.md); commands go to the caster as the person signed in.';
 
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
-const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const idPart = (s) => String(s).replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 
-/** The repertoire, as the caster resolves it: [{ id, name }], sorted by id, one per id. */
-export function repertoire(tablePath, knownDir) {
+/**
+ * The repertoire, as the caster plugin discovers it (PLUGIN.TRUNK_CASTER src/discover.rs and
+ * protocol.rs, mirrored step for step): each folder under KNOWN PROTOCOLS is a VENDOR (a sub-folder
+ * is a known protocol: each sub-folder is then a protocol it implements), a GROUP (a sub-folder looks
+ * like a vendor: its children are classified the same way) or a protocol's own DOCS folder. A folder
+ * name resolves through the caster's table (alias, or alias prefix where `prefix`); one no row names is
+ * kept as itself (lower-case, non-alphanumerics → `-`). TRUNK-* folders are never protocols, and a
+ * docs folder with no document counts for nothing. The local relay is a protocol too when the caster
+ * has a relay configuration (src/relay.rs PROTOCOL = "relay", named by the configuration's
+ * protocol_name). [{ id, name }], sorted by id, one per id.
+ */
+export function repertoire(tablePath, seedDir) {
   const rows = readJson(tablePath).protocols ?? [];
-  const resolveName = (folder) => {
+  const knownDir = join(seedDir, 'KNOWN PROTOCOLS');
+  const noise = (n) => n.startsWith('.') || n.startsWith('_') || /^(target|node_modules)$/i.test(n);
+  const dirs = (d) => readdirSync(d).filter((n) => !noise(n) && statSync(join(d, n)).isDirectory()).sort();
+  const files = (d) => readdirSync(d, { recursive: true }).some((n) => statSync(join(d, String(n))).isFile());
+  const canon = (folder) => {
     const lower = folder.trim().toLowerCase();
     if (lower.startsWith('trunk-')) return null;
     const row = rows.find((r) => (r.prefix ? lower.startsWith(r.alias) : lower === r.alias));
-    return row ? { id: row.id, name: row.name } : { id: slug(folder), name: folder.trim() };
+    return row ? { id: row.id, name: row.name } : { id: lower.replace(/[^a-z0-9]/g, '-').replace(/^-+|-+$/g, ''), name: folder.trim() };
   };
-  const found = new Map();
-  for (const r of rows) found.set(r.id, { id: r.id, name: r.name });
-  const walk = (dir, underVendorGroup) => {
-    for (const name of readdirSync(dir).sort()) {
-      if (name.startsWith('.') || name.startsWith('_')) continue;
-      const p = join(dir, name);
-      if (!statSync(p).isDirectory()) continue;
-      const subs = readdirSync(p).filter((n) => statSync(join(p, n)).isDirectory() && !n.startsWith('.') && !n.startsWith('_'));
-      if (subs.length) walk(p, name.toLowerCase() === 'vendor');
-      else if (!underVendorGroup) {
-        const hit = resolveName(name);
-        if (hit && !found.has(hit.id)) found.set(hit.id, hit);
-      }
+  const isKnown = (folder) => {
+    const lower = folder.trim().toLowerCase();
+    return rows.some((r) => (r.prefix ? lower.startsWith(r.alias) : lower === r.alias));
+  };
+  const looksLikeVendor = (d) => dirs(d).some(isKnown);
+  const classify = (d) => (dirs(d).some(isKnown) ? 'vendor' : dirs(d).some((s) => looksLikeVendor(join(d, s))) ? 'group' : 'docs');
+  const vendorDirs = [];
+  const docDirs = [];
+  const place = (d, kind) => (kind === 'vendor' ? vendorDirs.push(d) : kind === 'docs' ? docDirs.push(d) : null);
+  if (existsSync(knownDir)) {
+    for (const n of dirs(knownDir)) {
+      const d = join(knownDir, n);
+      const kind = classify(d);
+      if (kind === 'group') for (const v of dirs(d)) place(join(d, v), classify(join(d, v)));
+      else place(d, kind);
     }
-  };
-  if (existsSync(knownDir)) walk(knownDir, false);
+  }
+  const found = new Map();
+  for (const d of docDirs) {
+    const c = canon(d.split('/').pop());
+    if (c && files(d) && !found.has(c.id)) found.set(c.id, c);
+  }
+  for (const v of vendorDirs) {
+    for (const n of dirs(v)) {
+      const c = canon(n);
+      if (c && !found.has(c.id)) found.set(c.id, c);
+    }
+  }
+  const relay = join(seedDir, 'TRUNK-RELAY/relay.json');
+  if (existsSync(relay)) found.set('relay', { id: 'relay', name: readJson(relay).protocol_name ?? 'relay' });
   return [...found.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -118,7 +143,7 @@ function main() {
       process.exit(2);
     }
   }
-  const protocols = repertoire(join(CASTER, 'data/protocols.json'), join(CASTER, 'data/seed/KNOWN PROTOCOLS'));
+  const protocols = repertoire(join(CASTER, 'data/protocols.json'), join(CASTER, 'data/seed'));
   put(join(APP, 'data/protocols.json'), json(protocols));
 
   const decks = readdirSync(join(REFERENCE, 'PANELS'))
