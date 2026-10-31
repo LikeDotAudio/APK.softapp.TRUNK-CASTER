@@ -58,16 +58,23 @@ developed by Weitech Computer Solutions.
 
 The machines tab holds no bus client of its own. The OS keeps what every monitor probe
 says under `APK.audio/System/BareMetal/MonitorProbes/{probe}/{host}/` (`status`, retained,
-and `telemetry`), in `APK:OS/Network/machine-bus`. This page reads that store through
-`window.parent.OS`.
+and `telemetry`, and PLUGIN.MACHINE's retained `incoming/detail` and `incoming/state`), in
+`APK:OS/Network/machine-bus`. This page reads that store through `window.parent.OS`, by one
+adapter, `machineApi()` in `js/machines.js`: an OS that publishes `OS.machineApi` is held to
+`MACHINE_API` (1); an older OS is read by its four named functions (`machineBusList`,
+`machineBusRead`, `machineBusWatch`, `machineCommand`). An OS that has neither shape gets a
+"this OS cannot show the machines" page that names what is missing, not an empty tab.
 
 - **Alive is heard, not remembered.** A machine is alive while its samples keep coming.
   One quiet for five minutes is dead, whatever it last said. A retained `online` replayed
   at boot shows as *unheard* until a sample arrives.
 - **Named by its hostname**, never by an address: DHCP moves addresses.
-- **Read-only.** Power, a shell and a deploy are writes to somebody else's hardware.
-  They are the next piece of work, and they go through a confirmed path the OS owns,
-  not through a frame.
+- **The buttons declare, the shell sends** (PLAN-3394.01). ⏻ power, ›_ a named command and
+  ⤒ a deploy offer exactly what the machine's own agent lists in its `detail`; a machine that
+  is not alive can only be woken, to the MAC it last published. The frame writes nothing: it
+  hands the choice to `OS.machineCommand`, which asks the person to confirm, logs it and
+  publishes it as the broker's operator. The machine's answer (the retained `incoming/state`)
+  is shown under the buttons; "rehearse" sends it as a dry run.
 
 ## Layout
 
@@ -79,7 +86,7 @@ js/machines.js             the Machines tab: reads window.parent.OS, alive = hea
 css/app.css
 intercom/                  microcom-sim's static build — TRACKED; BUILT-FROM names its commit
 tools/build-intercom.sh    rebuilds intercom/ from SRC/microcom-sim (tsc --noEmit, vite build --mode static)
-tests/                     node --test: caster.test.mjs, machines.test.mjs
+tests/                     node --test: caster, machines, contract (machine_command vectors + TS twin), shell (machineApi + the OS store)
 SRC/trunk-caster-site      submodule: Trunk-Caster's public snapshot (twelve pages)
 SRC/microcom-sim           submodule: the public simulator the intercom/ build comes from
 SRC/microcom               submodule: the private archive (MCOM.EXE, decompile, specs) — kept out of every image
@@ -92,10 +99,10 @@ The intercom pages are always framed with `?engine=local` (`js/app.js`), so they
 ## Tests
 
 ```bash
-npm test     # node --test tests/*.test.mjs — 10 tests
+npm test     # node --test tests/*.test.mjs — 23 tests, the one local check (no CI workflow in this repo)
 ```
 
-They check that the Globe is the front door and every published page has a route, that the guard refuses every runtime call the snapshot makes while letting the snapshot's own files through, that a machine is alive only while it is heard, and that `intercom/` is the pinned microcom-sim build with no MCOM.EXE in it.
+They check that the Globe is the front door and every published page has a route, that the guard refuses every runtime call the snapshot makes while letting the snapshot's own files through, that a machine is alive only while it is heard, that `intercom/` is the pinned microcom-sim build with no MCOM.EXE in it, that every button is a command the SDK's machine_command contract accepts (its vectors and TypeScript twin, `contracts/` at the APK.audio root, loaded by Node's type stripping) and that the answer line reads what the contract writes, and that the Machines tab reads the OS's own machine store through `machineApi()`. The contract and OS-store tests find the monorepo by walking up and skip in a standalone clone. Needs Node ≥ 22.18 (type stripping, `module.registerHooks`).
 
 ## Philosophy
 

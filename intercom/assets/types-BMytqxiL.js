@@ -1,0 +1,1 @@
+var e=new Set([`talk`,`grp`,`call`,`cam`,`iso`,`conf`,`event`,`perm`,`xt`,`ext`]),t=new Set([`listen`,`listen-lm`]),n=[`talk`,`listen`,`listen-lm`,`grp`,`call`,`cam`,`iso`,`conf`,`event`,`perm`,`xt`,`cpl`,`pgm`,`ext`];export{n,e as r,t};

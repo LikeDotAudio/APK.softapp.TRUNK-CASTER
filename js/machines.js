@@ -111,12 +111,37 @@ function duration(ms) {
   return `${Math.floor(h / 24)} d ${h % 24} h`;
 }
 
-/** The shell's machine store, or null — opened on its own, or from a page that is not the shell. */
+/** The machine API version this tab speaks (list, read, watch, command — as below). */
+export const MACHINE_API = 1;
+const NAMED = ['machineBusList', 'machineBusRead', 'machineBusWatch', 'machineCommand'];
+
+/**
+ * The shell's machine API as this tab uses it — `{ list, read, watch, command }` —
+ * or `{ missing }` saying why not, so a reshaped OS shows "needs …", never a
+ * silent empty tab. An OS that publishes `OS.machineApi = { version, list, read,
+ * watch, command }` is held to MACHINE_API; one from before that is read by the
+ * four named functions it has always had, each checked.
+ */
+export function machineApi(os) {
+  if (!os) return { missing: 'not in the OS' };
+  const api = os.machineApi;
+  if (api && typeof api === 'object') {
+    if (api.version !== MACHINE_API) return { missing: `this tab speaks machine API ${MACHINE_API}; the OS offers ${api.version ?? 'an unversioned one'}` };
+    const gone = ['list', 'read', 'watch', 'command'].filter((k) => typeof api[k] !== 'function');
+    if (gone.length) return { missing: `the OS's machine API ${MACHINE_API} lacks ${gone.join(', ')}` };
+    return { list: () => api.list(), read: (h) => api.read(h), watch: (fn) => api.watch(fn), command: (req) => api.command(req) };
+  }
+  const gone = NAMED.filter((k) => typeof os[k] !== 'function');
+  if (gone.length === NAMED.length) return { missing: 'not in the OS' };
+  if (gone.length) return { missing: `the OS lacks ${gone.join(', ')} — this tab needs machine API ${MACHINE_API}` };
+  return { list: () => os.machineBusList(), read: (h) => os.machineBusRead(h), watch: (fn) => os.machineBusWatch(fn), command: (req) => os.machineCommand(req) };
+}
+
+/** The shell's OS object, or null — opened on its own, or from a page that is not the shell. */
 function shell() {
   try {
     if (!window.parent || window.parent === window) return null;
-    const os = window.parent.OS;
-    return os && typeof os.machineBusList === 'function' ? os : null;
+    return window.parent.OS ?? null;
   } catch {
     return null;
   }
@@ -130,10 +155,15 @@ const bar = (v, warn = 80, bad = 92) => (Number.isFinite(v) ? `<span class="mete
 
 /** Draw the machines into `host`, keep them current; returns the unmount. */
 export function mountMachines(host, status) {
-  const os = shell();
-  if (!os) {
+  const os = machineApi(shell());
+  if (os.missing === 'not in the OS') {
     host.innerHTML = `<div class="empty"><h2>No bus here</h2><p>The machines are read from the APK.audio OS's own connection to the bus. Open TRUNK-CASTER from the OS — <b>Intercom → TRUNK-CASTER</b> — to see them.</p></div>`;
     status.textContent = 'not in the OS';
+    return () => {};
+  }
+  if (os.missing) {
+    host.innerHTML = `<div class="empty"><h2>This OS cannot show the machines</h2><p>${esc(os.missing)}. Update the APK.audio OS, or this window, so the two agree.</p></div>`;
+    status.textContent = `needs machine API ${MACHINE_API}`;
     return () => {};
   }
   /* What this window is doing: which menu is open, and the last word from the
@@ -147,7 +177,7 @@ export function mountMachines(host, status) {
     said[r.host] = { text: 'waiting for your confirmation in the OS…' };
     draw();
     try {
-      const out = await os.machineCommand({ probe: r.probe, host: r.segment, verb: a.verb, action: a.action, name: a.name, mac: a.mac, dry_run: rehearse });
+      const out = await os.command({ probe: r.probe, host: r.segment, verb: a.verb, action: a.action, name: a.name, mac: a.mac, dry_run: rehearse });
       said[r.host] = out.cancelled
         ? { text: 'cancelled — nothing was sent' }
         : { text: `sent · log ${out.log_id} — waiting for the machine to answer`, id: out.command_id };
@@ -160,7 +190,7 @@ export function mountMachines(host, status) {
   host.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-host]');
     if (b && host.contains(b)) {
-      const rec = os.machineBusRead(b.dataset.host);
+      const rec = os.read(b.dataset.host);
       if (!rec) return;
       if (b.dataset.kind && b.dataset.i === undefined) {
         open = open && open.host === rec.host && open.kind === b.dataset.kind ? null : { host: rec.host, kind: b.dataset.kind };
@@ -194,7 +224,7 @@ export function mountMachines(host, status) {
 
   const draw = () => {
     const now = Date.now();
-    const rows = os.machineBusList().map((r) => ({ r, j: judge(r, now), h: health(r) }));
+    const rows = os.list().map((r) => ({ r, j: judge(r, now), h: health(r) }));
     rows.sort((a, b) => ORDER[a.j.state] - ORDER[b.j.state] || a.r.host.localeCompare(b.r.host));
     const count = (s) => rows.filter((x) => x.j.state === s).length;
     status.textContent = rows.length ? `${count('alive')} alive · ${count('dead') + count('offline')} dead · ${count('unheard')} unheard` : '';
@@ -224,7 +254,7 @@ export function mountMachines(host, status) {
   };
   draw();
   let queued = false;
-  const unwatch = os.machineBusWatch(() => {
+  const unwatch = os.watch(() => {
     if (queued) return;
     queued = true;
     requestAnimationFrame(() => {

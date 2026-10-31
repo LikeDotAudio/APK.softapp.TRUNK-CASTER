@@ -1,0 +1,1 @@
+import{r as e}from"./socket-Ckc-GqkK.js";function t(t){return e(t)}export{t as openFrameLink};

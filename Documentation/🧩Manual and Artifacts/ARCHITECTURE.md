@@ -25,10 +25,13 @@ index.html ─▶ js/app.js route()
    │     links: another snapshot page → go(page); a runtime link → note(RUNTIME_NOTE)
    ├─ intercom tab ─▶ iframe intercom/<matrix|panel|mc3|emu>.html?engine=local
    │     (microcom-sim's local engine in a SharedWorker; every window shares one matrix)
-   └─ machines ─▶ mountMachines(): window.parent.OS machine-bus store
+   └─ machines ─▶ mountMachines(): machineApi(window.parent.OS) → { list, read, watch, command }
+         (OS.machineApi held to MACHINE_API = 1, or the four named machineBus*/machineCommand functions)
          APK.audio/System/BareMetal/MonitorProbes/{probe}/{host}/status (retained) + telemetry
          judge(): offline (said so, newer than the last sample) · alive (heard ≤ TRUST_MS) · dead · unheard
          health(): fullest partition, hottest sensor, …
+         actionsFor(detail): ⏻ ›_ ⤒ → command({probe, host, verb, action|name, mac, dry_run}) — the OS confirms,
+         logs and publishes; answerLine() reads the retained incoming/state answer
 ```
 
 ## Files
@@ -41,7 +44,7 @@ index.html ─▶ js/app.js route()
 | `js/machines.js` | The Machines tab |
 | `intercom/` | microcom-sim's static build (tracked); `BUILT-FROM` |
 | `tools/build-intercom.sh` | Rebuilds `intercom/` from `SRC/microcom-sim` |
-| `tests/` | `node --test`: `caster.test.mjs`, `machines.test.mjs` |
+| `tests/` | `node --test` (`npm test`): `caster`, `machines`, `contract` (machine_command vectors + TS twin from the root `contracts/`), `shell` (`machineApi` + the OS's machine-bus store) |
 | `SRC/trunk-caster-site` | Submodule: Trunk-Caster's public snapshot (generated upstream) |
 | `SRC/microcom-sim` | Submodule: the public simulator |
 | `SRC/microcom` | Submodule: the private archive — never in an image |

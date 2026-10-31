@@ -10,6 +10,5 @@
   "tech": "web",
   "app": "APK:Softapps/HARDWARE_AND_NETWORK/INTERCOM.TRUNK-CASTER/index.html",
   "description": "INTERCOM: TRUNK-CASTER — the intercom trunking system on a globe (Trunk-Caster's published snapshot), the Ward-Beck MicroCOM II intercom it trunks (matrix, panels, MicroCOM III, the MCOM.EXE emulator), and the bare metal machines it runs on, alive or dead off the bus.",
-  "topic": "APK.audio/Gui/Softapps/Intercom/TRUNK_CASTER",
   "autostart": false
 }
