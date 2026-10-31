@@ -34,6 +34,11 @@
 - Rebuilding `intercom/` after a submodule bump is by hand (`tools/build-intercom.sh`); `npm test` fails until it is done, because it holds `BUILT-FROM` to the `SRC/microcom-sim` gitlink.
 - `SRC/trunk-caster-site` updates only when its upstream publishes and the pointer is bumped.
 
+## Delivered 2026-10-31: portable file names (no `:` `|` or case twins)
+
+- The monorepo now checks out on Windows and macOS: no tracked name holds `<>:"|?*`, a trailing dot or space, a device name or a case-only twin. Colon folders became dot folders (the POD.x convention).
+- `vendor/apk-contracts/` re-synced: the bundled topic grammar names its producer `PLUGIN.CHROMECAST/SRC/Discovery.ChromeCast/src/lib.rs`. No behaviour change.
+
 ## Delivered from the 2026-10-30 audit
 
 TRUNK-CASTER is the OS's Intercom → TRUNK-CASTER window (served from the web-static image's Softapps copy).
