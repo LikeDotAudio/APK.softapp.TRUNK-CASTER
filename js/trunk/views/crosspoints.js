@@ -8,12 +8,15 @@ import * as C from '../../../vendor/apk-contracts/apk-contracts.mjs';
  * CROSS POINTS — every frame's closed crosspoints as the caster holds them
  * (trunk/Crosspoint/{frame}, written whole on each change), the Ward-Beck line
  * each one is (rendered through the contract's renderWardBeckLine), and the
- * crosspoint events as they happen. Reset clears them all (crosspoint_reset)
- * after you say so.
+ * crosspoint events as they happen, and each frame's tap strip — the gain on
+ * every closed crosspoint and who holds it (trunk/View/Taps/{frame}, the old
+ * /api/taps), with a reset to unity per frame (taps_unity). Reset clears every
+ * crosspoint (crosspoint_reset) after you say so.
  */
 export function create({ api, say }) {
   const frames = live();
   const recent = live();
+  const taps = live();
   const node = el(
     'div',
     { class: 'tc-view' },
@@ -21,6 +24,7 @@ export function create({ api, say }) {
       commandButton('Reset every crosspoint', () => (confirm('Open every crosspoint on every frame?') ? api.command('crosspoint_reset', {}) : Promise.resolve({ ok: false, status: 'cancelled', detail: '' })), say)),
     section('Closed crosspoints by frame', frames.node),
     section('Recent crosspoint events', recent.node),
+    section('Tap strips', taps.node),
   );
   return {
     node,
@@ -34,6 +38,17 @@ export function create({ api, say }) {
           ['Ward-Beck', (r) => el('code', {}, wardBeck(s, r))], ['Since', (r) => ago(Date.parse(r.at) || 0)],
         ], rows, 'No closed crosspoint (trunk/Crosspoint/…).'),
       );
+      const strips = Object.values(s.views?.Taps ?? {}).filter((t) => t && t.faders?.length).sort((a, b) => (b.kbps ?? 0) - (a.kbps ?? 0) || String(a.frame).localeCompare(String(b.frame)));
+      taps.set(s.views?.Taps
+        ? [
+          el('p', { class: 'hint' }, `${strips.length} frames with a crosspoint gain; loudest first.`),
+          table([
+            ['Frame', (t) => t.frame], ['Site', (t) => t.site], ['Protocol', (t) => t.protocol], ['kbit/s', (t) => (Number(t.kbps) || 0).toFixed(1)],
+            ['Faders', (t) => el('code', {}, t.faders.map((f) => `${f.input}→${f.output} ${Number(f.db) > 0 ? '+' : ''}${f.db} dB${f.who ? ` (${f.who})` : ''}`).join(' · '))],
+            ['', (t) => commandButton('Unity', () => api.command('taps_unity', { frame: t.frame }), say)],
+          ], strips.slice(0, 60), 'No closed crosspoint carries a gain.'),
+        ]
+        : el('p', { class: 'hint' }, 'No tap strips on the bus yet (trunk/View/Taps/…).'));
       recent.set(table([
         ['When', (e) => ago(e.at)], ['Op', (e) => e.event?.op], ['Frame', (e) => e.event?.frame], ['In → out', (e) => `${e.event?.input} → ${e.event?.output}`], ['Connection', (e) => e.event?.connection],
       ], s.events.filter((e) => e.kind === 'Crosspoint').slice(-40).reverse(), 'No crosspoint event since this OS connected.'));

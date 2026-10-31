@@ -14,7 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { routeOf, VIEWS } from '../js/trunk/routes.js';
 import { project, arc } from '../js/trunk/views/globe.js';
-import { joins, connectionOf } from '../js/trunk/views/deck.js';
+import { joins, connectionOf, callFrame } from '../js/trunk/views/deck.js';
 import { agree, checkedIn } from '../js/trunk/views/sim.js';
 import { wardBeck } from '../js/trunk/views/crosspoints.js';
 import { trunkApi, TRUNK_API, casterWord } from '../js/trunk/bus.js';
@@ -97,4 +97,13 @@ const MONOREPO = existsSync(join(APP, '../../../../POD.THICK/PLUGINS/PLUGIN.TRUN
 test('every generated window and data file is current (build-trunk-windows --check)', { skip: MONOREPO ? false : 'no APK.audio monorepo above this checkout' }, () => {
   const out = execFileSync(process.execPath, [join(APP, 'tools/build-trunk-windows.mjs'), '--check'], { encoding: 'utf8' });
   assert.match(out, /current/);
+});
+
+test('a call key finds its intercom by id, site, or a slug prefix (PARI -> paris-01)', () => {
+  const frames = [{ id: 'paris-01', site: 'Paris' }, { id: 'paris-02', site: 'Paris' }, { id: 'new-york-01', site: 'New York' }, { id: 'hq-sip-01', site: 'HQ' }];
+  assert.equal(callFrame(frames, 'PARI')?.id, 'paris-01');
+  assert.equal(callFrame(frames, 'paris-02')?.id, 'paris-02');
+  assert.equal(callFrame(frames, 'New York')?.id, 'new-york-01');
+  assert.equal(callFrame(frames, 'WASH'), null);
+  assert.equal(callFrame(frames, ''), null);
 });

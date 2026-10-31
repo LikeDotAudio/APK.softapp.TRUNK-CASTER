@@ -9,7 +9,10 @@ import { live, framesOf, siteOf } from '../view.js';
  * between them (trunk/Trunk/{trunk}) as great-circle arcs, on an orthographic
  * globe that turns by itself and by drag. Land is data/land.json, the same
  * outline Trunk-Caster's own globe drew (RUST-RUNTIME/src/land.json): rings of
- * [lon, lat, lon, lat, …].
+ * [lon, lat, lon, lat, …]. Beside it, from the caster's own views (ROAD-3453):
+ * each site's local time, load and calls (trunk/View/Regions, the old
+ * /api/regions) and the trunks that became habits — most used, longest locked
+ * streak (View/Globe, the trend part of the old /api/globe).
  */
 
 const D = Math.PI / 180;
@@ -119,7 +122,22 @@ export function create(ctx) {
       const bySite = {};
       for (const f of frames) (bySite[siteOf(f)] ??= []).push(f);
       const sites = Object.values(s.sites).sort((a, b) => (b.frames ?? 0) - (a.frames ?? 0));
+      const regions = Array.isArray(s.views?.Regions) ? s.views.Regions : null;
+      const trends = s.views?.Globe;
+      const habits = Array.isArray(trends?.history) ? trends.history.slice().sort((a, b) => (b.streak ?? 0) - (a.streak ?? 0) || (b.uses ?? 0) - (a.uses ?? 0)).slice(0, 15) : null;
       side.set(
+        regions
+          ? section('Local time and load', table([
+            ['Site', (x) => x.site], ['Local', (x) => x.local_clock], ['Load', (x) => `${Math.round((Number(x.load) || 0) * 100)}%`],
+            ['Calls', (x) => String(x.calls ?? 0)], ['Trunks', (x) => String(x.trunks ?? 0)], ['Panels live', (x) => String(x.panels_live ?? 0)],
+          ], regions.slice().sort((a, b) => (b.calls ?? 0) - (a.calls ?? 0)).slice(0, 25), 'No site.'))
+          : el('p', { class: 'hint' }, 'No local times on the bus yet (trunk/View/Regions).'),
+        habits
+          ? section('Trunk habits', table([
+            ['A ↔ B', (h) => `${h.a} ↔ ${h.b}`], ['Uses', (h) => String(h.uses ?? 0)], ['Locked streak (days)', (h) => String(h.streak ?? 0)],
+            ['Locked today', (h) => (h.lt ? 'yes' : '')], ['Longest', (h) => String(h.longest ?? '')],
+          ], habits, 'No trunk has carried a call yet.'))
+          : null,
         el('p', { class: 'hint' }, `${sites.length || Object.keys(bySite).length} sites · ${frames.length} frames · ${Object.keys(s.trunks).length} trunks · ${Object.keys(s.connections).length} live connections. Drag to turn; double-click to stop or start the spin.`),
         section('Sites', table([
           ['Site', (x) => x.name],

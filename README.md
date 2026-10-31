@@ -6,15 +6,15 @@ The intercom trunking system on a globe, the intercom it trunks and the bare met
 
 | Tab | What |
 |---|---|
-| 🌐 **Globe** | Every site the caster publishes, the frames at each and the trunks between the casters, on a turning globe. |
+| 🌐 **Globe** | Every site the caster publishes, the frames at each and the trunks between the casters, on a turning globe; each site's local time and load, and the trunks that became habits. |
 | 🔁 **Relay** | The local sound-card relay: devices on matrix ports, its events; bind, unbind, report. |
-| 🎚 **Simulator** | The fader and the simulated clock, live connections with release, a connect form, every event. |
-| ✳ **Cross Points** | Every frame's closed crosspoints as Ward-Beck lines, the crosspoint events, a confirmed reset. |
-| 📈 **Usage** | Trunks against capacity, connections per protocol, bookings with book and cancel. |
+| 🎚 **Simulator** | The fader and the simulated clock, the event presets, the caster's status, live connections with release, a connect form, every event, the run report. |
+| ✳ **Cross Points** | Every frame's closed crosspoints as Ward-Beck lines, the crosspoint events, each frame's tap strip with a reset to unity, a confirmed reset. |
+| 📈 **Usage** | Trunks against capacity, connections per protocol, voice bandwidth, each production's counters, bookings with book and cancel. |
 | 🛰 **Space** | Frames as capacity: free and trunked casters per site and per frame. |
 | 🗄 **Racks** | Frames in racks: every port with its name and panel label, lit while in use; rename. |
-| 👥 **Users** | Who holds which connections and bookings, who asked whom; panel seek. |
-| 🔬 **Analyzer** | Captures of the caster's traffic: start, stop, read. |
+| 👥 **Users** | Who holds which connections and bookings, the caster's phone book, who asked whom; panel seek. |
+| 🔬 **Analyzer** | Captures of the caster's traffic: start, stop, every capture on the caster, any one analysed hour by hour. |
 | 🎛 **Decks** | Each Stream Deck panel (mini, mk2, plus, xl) as keys on screen, on a frame and port of your choosing. |
 | 🧪 **Sims** | One window per protocol's frame simulator: sim vs caster, double validation. |
 | 🎛 **Matrix** | The Ward-Beck Systems MicroCOM II matrix engine: 32 productions × 64 ports, routing and live audio. Every window shares one matrix. |
@@ -38,7 +38,7 @@ they speak the `trunk` contract (`contracts/TRUNK.md` at the APK.audio root). Ev
 the bus, never an HTTP server of the caster's own.
 
 **No bus client of its own.** The OS shell keeps every retained `trunk` document — frames, trunks,
-connections, crosspoints, bookings, sites, relay bindings, sim frames — and a ring of events, in
+connections, crosspoints, bookings, sites, relay bindings, the caster's read-only views (`trunk/View/…`: status, report, regions, phone book, bandwidth, captures, presets, productions, trend history, tap strips), sim frames — and a ring of events, in
 `APK:OS/Network/trunk-bus`. The views read it through `window.parent.OS.trunkApi` (version 1,
 `js/trunk/bus.js`); a command (connect, release, rename, book, the fader, the relay, captures…) is
 handed to `OS.trunkApi.command(verb, args)`, which checks it against the contract, stamps the person
@@ -46,9 +46,16 @@ signed in, publishes it on `trunk/outgoing/command` and resolves with the caster
 `trunk/incoming/result`. Opened outside the shell, a view says there is no bus here.
 
 **Every window is written from data.** `tools/build-trunk-windows.mjs` writes one OS window per view,
-per Stream Deck panel (`INTERCOM.Caster/SRC/PANELS/streamdeck-*.json` → `data/decks/`) and per protocol
+per Stream Deck panel (`data/decks/streamdeck-*.json`, this app's own since ROAD-3453, with `panel.schema.json`) and per protocol
 (the caster plugin's `data/protocols.json` and its seed `KNOWN PROTOCOLS` folders → `data/protocols.json`),
 and `--check` fails when one is out of date. No protocol or panel is listed in code.
+
+**Stream Deck keys land on real ports.** A deck sits on a frame you pick and a port; a talk or
+listen key's target (`PNL01`, `IFB01` …) is the name of a port on that frame. Trunk-Caster names a
+port after whoever calls through it, so a key resolves to the port whose current name is its target,
+else to the port you bound it to in the window's **Bind keys** panel (kept in this browser — the
+per-button configuration Companion keeps on its own machine); a call key's `ICOM:port` finds its
+frame by id, site, or a slug prefix (`PARI` → `paris-01`).
 
 The published snapshot this app used to frame (`trunk-caster-site`) is gone: it was not online
 locally, and the Globe now draws the live caster.
@@ -104,7 +111,7 @@ adapter, `machineApi()` in `js/machines.js`: an OS that publishes `OS.machineApi
 index.html                 the window: tab bar, the Trunk-Caster pane, the intercom frame, the machines pane
 js/app.js                  routing by hash (#globe … #analyzer, #deck/<model>, #sim/<protocol>, #matrix, #panel, #mc3, #emu, #machines)
 js/trunk/                  the Trunk-Caster views: bus.js (the shell's trunkApi), view.js, routes.js, views/*.js
-data/                      written by tools/build-trunk-windows.mjs: protocols.json, decks/, land.json
+data/                      protocols.json and decks/index.json written by tools/build-trunk-windows.mjs; decks/streamdeck-*.json, decks/panel.schema.json and land.json are this app's own (from Trunk-Caster's PANELS/ and runtime)
 js/machines.js             the Machines tab: reads window.parent.OS, alive = heard within TRUST_MS (5 min)
 css/app.css
 intercom/                  microcom-sim's static build — TRACKED; BUILT-FROM names its commit

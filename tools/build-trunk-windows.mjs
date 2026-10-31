@@ -11,11 +11,15 @@
  *   PLUGIN.TRUNK_CASTER/SRC/data/protocols.json        the caster's protocol table (alias → id, name)
  *   PLUGIN.TRUNK_CASTER/SRC/data/seed/                  KNOWN PROTOCOLS/ and TRUNK-RELAY/relay.json: the
  *                                                       repertoire, discovered exactly as the caster does
- *   INTERCOM.Caster/SRC/PANELS/streamdeck-*.json        the Stream Deck panel definitions
- *   INTERCOM.Caster/SRC/RUST-RUNTIME/src/land.json      the globe's land outline
+ *   data/decks/streamdeck-*.json                        the Stream Deck panel definitions — this app's
+ *                                                       own data since ROAD-3453 (they came from
+ *                                                       Trunk-Caster's PANELS/, with their schema)
+ *
+ * data/land.json (the globe's land outline, from Trunk-Caster's runtime) is this app's own data
+ * too and is not written here.
  *
  * WHAT IT WRITES:
- *   data/protocols.json, data/decks/<model>.json, data/decks/index.json, data/land.json
+ *   data/protocols.json, data/decks/index.json
  *   PODS/POD.THIN/OS/Trunk <Name>/display.json   one window per view, per Stream Deck and per protocol,
  *                                                group Intercom; a window it wrote before whose source
  *                                                has gone is removed (only folders holding an id it owns)
@@ -30,22 +34,22 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const APP = resolve(HERE, '..');
 const PODS = resolve(APP, '../../../..');
 const CASTER = join(PODS, 'POD.THICK/PLUGINS/PLUGIN.TRUNK_CASTER/SRC');
-const REFERENCE = join(PODS, 'POD.THICK/INTERCOM.Caster/SRC');
+const DECKS = join(APP, 'data/decks');
 const OS = join(PODS, 'POD.THIN/OS');
 const APP_PATH = 'APK:Softapps/HARDWARE_AND_NETWORK/INTERCOM.TRUNK-CASTER/index.html';
 const check = process.argv.includes('--check');
 
 /** The views: route, window name, icon, what it is. */
 export const VIEWS = [
-  ['globe', 'Globe', '🌐', 'every site the caster publishes, the frames at each and the trunks between the casters as great-circle arcs, on a globe that turns by itself and by drag'],
+  ['globe', 'Globe', '🌐', 'every site the caster publishes, the frames at each and the trunks between the casters as great-circle arcs, on a globe that turns by itself and by drag; each site’s local time, load and calls, and the trunks that became habits'],
   ['relay', 'Relay', '🔁', 'the local sound-card relay: which device sits on which matrix port, its events, and bind / unbind / report through the caster'],
-  ['simulator', 'Simulator', '🎚', 'the fader and the simulated clock (speed, run / stop, the hour, presets), the live connections with release, a connect form and every event as it happens'],
-  ['crosspoints', 'Cross Points', '✳', 'every frame’s closed crosspoints, each as its Ward-Beck line, the crosspoint events, and a confirmed reset'],
-  ['usage', 'Usage', '📈', 'each trunk’s channels against its capacity, live connections per protocol, and the booking timeline with book and cancel'],
+  ['simulator', 'Simulator', '🎚', 'the fader and the simulated clock (speed, run / stop, the hour, the event presets), the caster’s status, the live connections with release, a connect form, every event as it happens and the current run’s report'],
+  ['crosspoints', 'Cross Points', '✳', 'every frame’s closed crosspoints, each as its Ward-Beck line, the crosspoint events, each frame’s tap strip (the gain on every crosspoint) with a reset to unity, and a confirmed reset'],
+  ['usage', 'Usage', '📈', 'each trunk’s channels against its capacity, live connections per protocol, the voice bandwidth per protocol and per trunk, each production’s counters, and the booking timeline with book and cancel'],
   ['space', 'Space', '🛰', 'the frames as capacity: per site and per frame, which casters are free and which are trunked'],
   ['racks', 'Racks', '🗄', 'the frames in racks, one per site: every user port with its name and panel label, lit while someone is on it, and a rename form'],
-  ['users', 'Users', '👥', 'the people: who holds which live connections and bookings, who asked whom, and a panel seek'],
-  ['analyzer', 'Analyzer', '🔬', 'captures of the caster’s traffic: start one with a note, stop it, read what was captured'],
+  ['users', 'Users', '👥', 'the people: who holds which live connections and bookings, the caster’s phone book, who asked whom, and a panel seek'],
+  ['analyzer', 'Analyzer', '🔬', 'captures of the caster’s traffic: start one with a note, stop it, list every capture on the caster and read any one analysed hour by hour'],
 ];
 
 const TRUNK_SOURCE = 'Read off the bus through the shell (APK:OS/Network/trunk-bus): PLUGIN.TRUNK_CASTER and PLUGIN.TRUNK_SIM speak the trunk contract (contracts/TRUNK.md); commands go to the caster as the person signed in.';
@@ -137,7 +141,7 @@ function put(path, text) {
 const json = (v) => `${JSON.stringify(v, null, 2)}\n`;
 
 function main() {
-  for (const p of [join(CASTER, 'data/protocols.json'), join(REFERENCE, 'PANELS')]) {
+  for (const p of [join(CASTER, 'data/protocols.json'), DECKS]) {
     if (!existsSync(p)) {
       console.error(`build-trunk-windows: ${p} is not here — run this inside the APK.audio monorepo`);
       process.exit(2);
@@ -146,14 +150,18 @@ function main() {
   const protocols = repertoire(join(CASTER, 'data/protocols.json'), join(CASTER, 'data/seed'));
   put(join(APP, 'data/protocols.json'), json(protocols));
 
-  const decks = readdirSync(join(REFERENCE, 'PANELS'))
+  const decks = readdirSync(DECKS)
     .filter((f) => /^streamdeck-[a-z0-9-]+\.json$/.test(f))
     .sort()
-    .map((f) => ({ file: f, def: readJson(join(REFERENCE, 'PANELS', f)) }));
-  for (const { def } of decks) put(join(APP, `data/decks/${def.device.model}.json`), json(def));
+    .map((f) => ({ file: f, def: readJson(join(DECKS, f)) }));
+  for (const { file, def } of decks) {
+    if (`${def.device?.model}.json` !== file) {
+      console.error(`build-trunk-windows: ${file} says it is ${def.device?.model} — a deck file is named after its model`);
+      process.exit(2);
+    }
+  }
   const deckIndex = decks.map(({ def }) => ({ model: def.device.model, name: `${def.device.model.replace(/^streamdeck-/, 'Stream Deck ').replace(/-/g, ' ')} · ${def.name}`, rows: def.device.rows, cols: def.device.cols }));
   put(join(APP, 'data/decks/index.json'), json(deckIndex));
-  put(join(APP, 'data/land.json'), readFileSync(join(REFERENCE, 'RUST-RUNTIME/src/land.json'), 'utf8'));
 
   const windows = [
     ...VIEWS.map(([route, name, icon, what]) => ({ folder: `Trunk ${name}`, doc: display(`TRUNK_${idPart(route).toUpperCase()}`, name, icon, 'Trunk-Caster', route, what) })),
