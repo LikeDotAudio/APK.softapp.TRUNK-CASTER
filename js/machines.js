@@ -31,14 +31,21 @@
 /** How long a sample is believed, ms: five minutes, and then it is dead. */
 export const TRUST_MS = 5 * 60 * 1000;
 
-/** What a record says about its machine now: { state: alive | dead | offline | unheard, why }. */
+/**
+ * What a record says about its machine now: { state, why }, the state a word of
+ * the SDK's state token (contracts/tokens/state.json), so the row is drawn with
+ * the token's tone: online (heard inside TRUST_MS) · offline (the probe said so,
+ * newer than its last sample) · unresponsive (heard once, quiet past TRUST_MS:
+ * unreachable is dead) · stale (a remembered online, no sample yet) · unknown
+ * (nothing heard at all).
+ */
 export function judge(rec, now = Date.now()) {
   const st = rec.status ?? {};
   const age = rec.heardAt ? now - rec.heardAt : Infinity;
   if (st.status === 'offline' && rec.statusAt >= rec.heardAt) return { state: 'offline', why: `offline${st.reason ? ` · ${st.reason.replace(/_/g, ' ')}` : ''}${st.at ? ` · ${st.at}` : ''}` };
-  if (age <= TRUST_MS) return { state: 'alive', why: `heard ${ago(age)}` };
-  if (rec.heardAt) return { state: 'dead', why: `not heard for ${ago(age)}` };
-  return { state: 'unheard', why: st.status === 'online' ? 'a remembered “online” — no sample yet' : 'no sample yet' };
+  if (age <= TRUST_MS) return { state: 'online', why: `heard ${ago(age)}` };
+  if (rec.heardAt) return { state: 'unresponsive', why: `not heard for ${ago(age)}` };
+  return st.status === 'online' ? { state: 'stale', why: 'a remembered “online” — no sample yet' } : { state: 'unknown', why: 'no sample yet' };
 }
 
 /** A record's health, the few numbers that say how a machine is: plain data for the row. */
@@ -63,7 +70,7 @@ export function health(rec) {
   };
 }
 
-const ORDER = { alive: 0, unheard: 1, offline: 2, dead: 3 };
+const ORDER = { online: 0, stale: 1, unknown: 2, offline: 3, unresponsive: 4 };
 
 /**
  * What the three buttons may ask of one machine, read off its agent's
@@ -77,7 +84,7 @@ export function actionsFor(rec, state) {
   if (!d) return { power: [], run: [], deploy: [], why: 'no machine agent (PLUGIN.MACHINE) has spoken for this machine' };
   const mac = (d.macs ?? []).map((m) => m.mac).find(Boolean);
   const wake = mac ? [{ label: `Power on — wake ${mac}`, verb: 'power', action: 'on', mac }] : [];
-  if (state !== 'alive') return { power: wake, run: [], deploy: [], why: wake.length ? '' : 'not alive, and no MAC to wake it by' };
+  if (state !== 'online') return { power: wake, run: [], deploy: [], why: wake.length ? '' : 'not alive, and no MAC to wake it by' };
   const power = d.power_method && d.power_method !== 'none'
     ? [{ label: 'Reboot', verb: 'power', action: 'cycle' }, { label: 'Power off', verb: 'power', action: 'off' }]
     : [];
@@ -227,7 +234,7 @@ export function mountMachines(host, status) {
     const rows = os.list().map((r) => ({ r, j: judge(r, now), h: health(r) }));
     rows.sort((a, b) => ORDER[a.j.state] - ORDER[b.j.state] || a.r.host.localeCompare(b.r.host));
     const count = (s) => rows.filter((x) => x.j.state === s).length;
-    status.textContent = rows.length ? `${count('alive')} alive · ${count('dead') + count('offline')} dead · ${count('unheard')} unheard` : '';
+    status.textContent = rows.length ? `${count('online')} online · ${count('unresponsive') + count('offline')} dead · ${count('stale') + count('unknown')} unheard` : '';
     if (!rows.length) {
       host.innerHTML = `<div class="empty"><h2>No machines on the bus yet</h2><p>A machine appears here when its monitor probe speaks under <code>APK.audio/System/BareMetal/MonitorProbes/</code> — run PLUGIN.DESKTOP_MONITOR on it.</p></div>`;
       return;
@@ -237,7 +244,7 @@ export function mountMachines(host, status) {
         <thead><tr><th>machine</th><th>state</th><th>OS · up</th><th>CPU</th><th>memory</th><th>fullest disk</th><th>hottest</th><th>last seen at</th><th title="Power, a named command, a deploy — each confirmed in the OS, logged and sent as the operator">actions</th></tr></thead>
         <tbody>${rows
           .map(({ r, j, h }) => `
-          <tr class="${j.state}">
+          <tr class="${j.state}" data-apk-state="${j.state}">
             <td><b>${esc(r.host)}</b><div class="sub">${esc(r.probe)}</div></td>
             <td><span class="dot"></span>${esc(j.state)}<div class="sub">${esc(j.why)}</div></td>
             <td>${esc(h.os || '—')}<div class="sub">${h.uptime ? `up ${esc(h.uptime)}` : ''}</div></td>

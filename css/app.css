@@ -6,10 +6,11 @@
   --border: #243040;
   --text: #dce4ee;
   --muted: #7f8ea3;
-  --accent: #f5a524;
-  --ok: #22c55e;
-  --warn: #f59e0b;
-  --bad: #ef4444;
+  /* brand and state colours are the SDK's tokens (vendor/apk-contracts/apk-tokens.css, from contracts/tokens) */
+  --accent: var(--apk-accent);
+  --ok: var(--apk-state-good);
+  --warn: var(--apk-state-kinda);
+  --bad: var(--apk-state-dead);
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 * { box-sizing: border-box; }
@@ -40,10 +41,11 @@ table.machines td { vertical-align: top; border-bottom: 1px solid #1a2230; paddi
 table.machines .sub { color: var(--muted); font-size: 11px; }
 table.machines td.ips { font: 11px var(--mono); color: var(--muted); }
 table.machines .dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--muted); }
-tr.alive .dot { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
-tr.dead .dot, tr.offline .dot { background: var(--bad); }
-tr.dead td, tr.offline td, tr.unheard td { opacity: 0.6; }
-tr.dead td:nth-child(2), tr.offline td:nth-child(2) { opacity: 1; color: var(--bad); }
+/* each row carries data-apk-state="<token word>"; apk-tokens.css gives it --apk-tone */
+tr[data-apk-state] .dot { background: var(--apk-tone); }
+tr[data-apk-state="online"] .dot { box-shadow: 0 0 6px var(--apk-tone); }
+tr:not([data-apk-state="online"]) td { opacity: 0.6; }
+tr[data-apk-state="offline"] td:nth-child(2), tr[data-apk-state="unresponsive"] td:nth-child(2) { opacity: 1; color: var(--apk-tone); }
 .meter { display: inline-block; width: 46px; height: 6px; margin-right: 4px; vertical-align: middle; background: #1f2937; border-radius: 3px; overflow: hidden; }
 .meter i { display: block; height: 100%; background: var(--ok); }
 .meter.warn i { background: var(--warn); }

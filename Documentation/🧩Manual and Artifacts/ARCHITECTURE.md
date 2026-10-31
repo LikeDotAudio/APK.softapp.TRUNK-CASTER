@@ -28,7 +28,8 @@ index.html ─▶ js/app.js route()
    └─ machines ─▶ mountMachines(): machineApi(window.parent.OS) → { list, read, watch, command }
          (OS.machineApi held to MACHINE_API = 1, or the four named machineBus*/machineCommand functions)
          APK.audio/System/BareMetal/MonitorProbes/{probe}/{host}/status (retained) + telemetry
-         judge(): offline (said so, newer than the last sample) · alive (heard ≤ TRUST_MS) · dead · unheard
+         judge() → state.json words: online (heard ≤ TRUST_MS) · offline (said so, newer than the last sample) · unresponsive (quiet past TRUST_MS) · stale (remembered online, unheard) · unknown
+         rows drawn with data-apk-state + vendor/apk-contracts/apk-tokens.css
          health(): fullest partition, hottest sensor, …
          actionsFor(detail): ⏻ ›_ ⤒ → command({probe, host, verb, action|name, mac, dry_run}) — the OS confirms,
          logs and publishes; answerLine() reads the retained incoming/state answer

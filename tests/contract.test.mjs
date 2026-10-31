@@ -66,7 +66,7 @@ test('every command the contract calls valid is one a button can ask for', { ski
       deploys: doc.verb === 'deploy' ? [doc.name] : [],
       macs: doc.mac ? [{ interface: 'eno1', mac: doc.mac }] : [],
     };
-    const offered = all(actionsFor(rec({ detail }), wake ? 'dead' : 'alive'));
+    const offered = all(actionsFor(rec({ detail }), wake ? 'unresponsive' : 'online'));
     const hit = offered.find((a) => a.verb === doc.verb && a.action === doc.action && a.name === doc.name && a.mac === doc.mac);
     assert.ok(hit, `${why}: no button asks for ${mc.describeMachineCommand(doc)}`);
   }
@@ -74,7 +74,7 @@ test('every command the contract calls valid is one a button can ask for', { ski
 
 test('every button, wrapped as the shell sends it, is a command the contract accepts', { skip }, () => {
   const detail = { hostname: 'render-01', power_method: 'os', commands: ['uptime', 'disk'], deploys: ['apk-plugins'], macs: [{ interface: 'eno1', mac: 'aa:bb:cc:00:11:22' }] };
-  const offered = [...all(actionsFor(rec({ detail }), 'alive')), ...all(actionsFor(rec({ detail }), 'dead'))];
+  const offered = [...all(actionsFor(rec({ detail }), 'online')), ...all(actionsFor(rec({ detail }), 'unresponsive'))];
   assert.ok(offered.length >= 6);
   for (const a of offered) {
     for (const k of Object.keys(a)) assert.ok(k === 'label' || mc.MACHINE_COMMAND_KEYS.includes(k), `button field ${k} is not in the contract`);

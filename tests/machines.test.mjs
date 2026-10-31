@@ -11,16 +11,16 @@ const rec = (over) => ({ host: 'render-01', probe: 'LinuxDesktop', status: null,
 
 test('alive is a sample heard inside five minutes; quieter is dead, whatever it last said', () => {
   assert.equal(TRUST_MS, 300_000);
-  assert.equal(judge(rec({ heardAt: NOW - 4_000 }), NOW).state, 'alive');
-  assert.equal(judge(rec({ heardAt: NOW - TRUST_MS }), NOW).state, 'alive');
+  assert.equal(judge(rec({ heardAt: NOW - 4_000 }), NOW).state, 'online');
+  assert.equal(judge(rec({ heardAt: NOW - TRUST_MS }), NOW).state, 'online');
   const dead = judge(rec({ heardAt: NOW - TRUST_MS - 1, status: { status: 'online' }, statusAt: NOW - 9e6 }), NOW);
-  assert.equal(dead.state, 'dead');
+  assert.equal(dead.state, 'unresponsive');
   assert.match(dead.why, /not heard for 5 min/);
 });
 
 test('a remembered online is not alive until it is heard', () => {
   const j = judge(rec({ status: { status: 'online' }, statusAt: NOW }), NOW);
-  assert.equal(j.state, 'unheard');
+  assert.equal(j.state, 'stale');
   assert.match(j.why, /remembered/);
 });
 
@@ -28,7 +28,7 @@ test('an offline the probe left behind is dead with its reason; a sample after i
   const off = judge(rec({ status: { status: 'offline', reason: 'connection_lost' }, statusAt: NOW - 1000, heardAt: NOW - 2000 }), NOW);
   assert.equal(off.state, 'offline');
   assert.match(off.why, /connection lost/);
-  assert.equal(judge(rec({ status: { status: 'offline' }, statusAt: NOW - 3000, heardAt: NOW - 1000 }), NOW).state, 'alive');
+  assert.equal(judge(rec({ status: { status: 'offline' }, statusAt: NOW - 3000, heardAt: NOW - 1000 }), NOW).state, 'online');
 });
 
 test('health is the few numbers that say how a machine is, from the probe’s own payload', () => {
@@ -69,24 +69,24 @@ test('the intercom build is the pinned microcom-sim, and carries no MCOM.EXE', (
 const detail = { hostname: 'render-01', power_method: 'os', commands: ['uptime', 'disk'], deploys: ['plugins'], macs: [{ interface: 'eno1', mac: 'aa:bb:cc:00:11:22' }] };
 
 test('no agent, no actions — and it says why', () => {
-  const a = actionsFor(rec({}), 'alive');
+  const a = actionsFor(rec({}), 'online');
   assert.deepEqual([a.power, a.run, a.deploy], [[], [], []]);
   assert.match(a.why, /PLUGIN\.MACHINE/);
 });
 
 test('an alive machine with an agent offers its own power, commands and deploys', () => {
-  const a = actionsFor(rec({ detail }), 'alive');
+  const a = actionsFor(rec({ detail }), 'online');
   assert.deepEqual(a.power.map((x) => x.action), ['cycle', 'off']);
   assert.deepEqual(a.run.map((x) => x.name), ['uptime', 'disk']);
   assert.deepEqual(a.deploy.map((x) => x.name), ['plugins']);
-  assert.equal(actionsFor(rec({ detail: { ...detail, power_method: 'none' } }), 'alive').power.length, 0, 'no power method, no power buttons');
+  assert.equal(actionsFor(rec({ detail: { ...detail, power_method: 'none' } }), 'online').power.length, 0, 'no power method, no power buttons');
 });
 
 test('a dead machine can only be woken, to the MAC it last published', () => {
-  const a = actionsFor(rec({ detail }), 'dead');
+  const a = actionsFor(rec({ detail }), 'unresponsive');
   assert.deepEqual(a.power, [{ label: 'Power on — wake aa:bb:cc:00:11:22', verb: 'power', action: 'on', mac: 'aa:bb:cc:00:11:22' }]);
   assert.deepEqual([a.run, a.deploy], [[], []]);
-  assert.match(actionsFor(rec({ detail: { ...detail, macs: [] } }), 'dead').why, /no MAC/);
+  assert.match(actionsFor(rec({ detail: { ...detail, macs: [] } }), 'unresponsive').why, /no MAC/);
 });
 
 test('the answer line says what, how it went, and when', () => {

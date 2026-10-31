@@ -69,6 +69,10 @@ adapter, `machineApi()` in `js/machines.js`: an OS that publishes `OS.machineApi
   One quiet for five minutes is dead, whatever it last said. A retained `online` replayed
   at boot shows as *unheard* until a sample arrives.
 - **Named by its hostname**, never by an address: DHCP moves addresses.
+- **Said in the SDK's words.** A row's state is a word of `contracts/tokens/state.json` — `online`,
+  `offline`, `unresponsive` (quiet past five minutes), `stale` (a remembered online), `unknown` — and is
+  coloured by the token (`vendor/apk-contracts/apk-tokens.css`, vendored by
+  `.apk.scripts/vendor_contract_web.py`; `--check` holds the copy). The accent is the brand token too.
 - **The buttons declare, the shell sends** (PLAN-3394.01). ⏻ power, ›_ a named command and
   ⤒ a deploy offer exactly what the machine's own agent lists in its `detail`; a machine that
   is not alive can only be woken, to the MAC it last published. The frame writes nothing: it

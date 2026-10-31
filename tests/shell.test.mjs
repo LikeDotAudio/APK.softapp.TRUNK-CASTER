@@ -69,8 +69,8 @@ test('the OS machine store, read through machineApi, gives the tab its rows and 
   const rows = api.list();
   assert.equal(rows.length, 1);
   const rec = api.read('render-01');
-  assert.equal(judge(rec).state, 'alive');
-  const a = actionsFor(rec, 'alive');
+  assert.equal(judge(rec).state, 'online');
+  const a = actionsFor(rec, 'online');
   assert.deepEqual(a.power.map((x) => x.action), ['cycle', 'off']);
   assert.deepEqual(a.run.map((x) => x.name), ['uptime']);
 });
