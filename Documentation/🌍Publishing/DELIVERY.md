@@ -9,7 +9,7 @@
 
 ## Test
 
-`npm test` → `node --test tests/*.test.mjs` — 23 tests, the one local check (no CI workflow). On 2026-10-31: 21 pass, 2 fail — the pinned-build test (`intercom/BUILT-FROM` is `2e64279`, `SRC/microcom-sim` pins `cfae9de` since 6c2dc2c; `tools/build-intercom.sh` not yet re-run) and the OS machine-store test in `tests/shell.test.mjs` (the OS's `machine-bus.js` now reads `globalThis.APKContracts.Topics`, which the test does not load). Node ≥ 22.18. Monorepo smoke run:
+`npm test` → `node --test tests/*.test.mjs` — 23 tests, the one local check (no CI workflow). On 2026-10-31: 23 pass (`intercom/` rebuilt from `SRC/microcom-sim` `5bbd846`, and the machine-store test loads `vendor/apk-contracts/apk-contracts.global.js` before the OS's `machine-bus.js`). Node ≥ 22.18. Monorepo smoke run:
 [SMOKE.md](../%F0%9F%A7%A9Manual%20and%20Artifacts/SMOKE.md).
 
 ## Ship

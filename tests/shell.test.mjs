@@ -55,6 +55,10 @@ const STORE = findOs();
 
 test('the OS machine store, read through machineApi, gives the tab its rows and buttons', { skip: STORE ? false : 'no APK.audio OS above this checkout' }, () => {
   const OS = { machineCommand: async () => ({ cancelled: true }) };   // the command dialog is the OS's, not exercised here
+  // machine-bus.js builds its root from window.APKContracts.Topics, which the OS
+  // shell loads first; so does this test, from the softapp's vendored bundle.
+  const BUNDLE = fileURLToPath(new URL('../vendor/apk-contracts/apk-contracts.global.js', import.meta.url));
+  globalThis.APKContracts = new Function(`${readFileSync(BUNDLE, 'utf8')}\nreturn APKContracts;`)();
   new Function('OS', readFileSync(STORE, 'utf8'))(OS);
   const api = machineApi(OS);
   assert.equal(api.missing, undefined, api.missing);
