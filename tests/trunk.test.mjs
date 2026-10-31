@@ -18,6 +18,8 @@ import { joins, connectionOf, callFrame } from '../js/trunk/views/deck.js';
 import { agree, checkedIn } from '../js/trunk/views/sim.js';
 import { wardBeck } from '../js/trunk/views/crosspoints.js';
 import { trunkApi, TRUNK_API, casterWord } from '../js/trunk/bus.js';
+import { windowOf, spanOf, OVERSCAN, BLIND_ROWS } from '../js/trunk/virtual.js';
+import { rackItems } from '../js/trunk/views/racks.js';
 
 const APP = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -106,4 +108,33 @@ test('a call key finds its intercom by id, site, or a slug prefix (PARI -> paris
   assert.equal(callFrame(frames, 'New York')?.id, 'new-york-01');
   assert.equal(callFrame(frames, 'WASH'), null);
   assert.equal(callFrame(frames, ''), null);
+});
+
+test('a windowed table draws the rows in sight and a few either side, never all of them (ROAD-3466)', () => {
+  // 40,000 rows of 24 px in a 480 px box scrolled to row 20,000: 20 in sight + the overscan
+  const w = windowOf(40000, 24, 20000 * 24, 480);
+  assert.equal(w.first, 20000 - OVERSCAN);
+  assert.equal(w.last, 20020 + OVERSCAN);
+  assert.deepEqual(windowOf(40000, 24, 0, 480), { first: 0, last: 20 + OVERSCAN });
+  assert.deepEqual(windowOf(40000, 24, 40000 * 24 - 480, 480), { first: 39980 - OVERSCAN, last: 40000 }, 'scrolled to the bottom draws the last rows');
+  assert.ok(windowOf(40000, 24, 1e9, 480).last === 40000, 'scrolled past the end still ends on the last row');
+  assert.deepEqual(windowOf(5, 24, 0, 480), { first: 0, last: 5 }, 'a short table draws every row');
+  assert.deepEqual(windowOf(0, 24, 0, 480), { first: 0, last: 0 });
+  assert.deepEqual(windowOf(40000, 24, 0, 0), { first: 0, last: BLIND_ROWS }, 'a hidden box draws a first screenful, not everything');
+});
+
+test('a windowed list of differing heights puts the drawn items where the rest would have been', () => {
+  const heights = [10, 20, 30, 40, 50, 60];
+  const s = spanOf(heights, 6, 99, 35, 40, 0); // y 35..75: item 2 (30..60) and item 3 (60..100)
+  assert.deepEqual(s, { first: 2, last: 4, before: 30, after: 110 });
+  const g = spanOf([], 1000, 50, 5000, 200, 2); // unmeasured: the guess stands in
+  assert.deepEqual(g, { first: 98, last: 106, before: 4900, after: 894 * 50 });
+  assert.deepEqual(spanOf([], 0, 50, 0, 200), { first: 0, last: 0, before: 0, after: 0 });
+});
+
+test('the racks list is each site heading followed by its frames, keyed so heights are remembered', () => {
+  const by = { a: [{ id: 'a-01', user_ports: 56 }, { id: 'a-02' }], b: [{ id: 'b-01', user_ports: 8 }] };
+  const items = rackItems(['a', 'b'], by);
+  assert.deepEqual(items.map((i) => i.key), ['site:a', 'frame:a-01:56', 'frame:a-02:0', 'site:b', 'frame:b-01:8']);
+  assert.equal(items[0].count, 2);
 });

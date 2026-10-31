@@ -2,6 +2,7 @@
 // MIT Licence. Free, for everyone, for ever. Full text in LICENSE at the root.
 import { el, section, table, form, commandButton } from '../dom.js';
 import { live, framesOf } from '../view.js';
+import { vtable } from '../virtual.js';
 
 /**
  * USAGE — how much of the trunking is in use: each trunk's channels against
@@ -13,9 +14,16 @@ import { live, framesOf } from '../view.js';
  * counters (View/Productions).
  */
 export function create({ api, say }) {
-  const trunks = live();
+  const trunks = vtable([
+    ['Trunk', (t) => t.id], ['A', (t) => `${t.a_frame} C${t.a_caster ?? ''}`], ['B', (t) => `${t.b_frame} C${t.b_caster ?? ''}`],
+    ['In use', (t) => meter(t.connections?.length ?? 0, t.capacity ?? 0)], ['Gain A / B', (t) => `${t.gain_a_db ?? 0} / ${t.gain_b_db ?? 0} dB`],
+  ], 'No trunk is up (trunk/Trunk/…).');
   const protocols = live();
-  const bookings = live();
+  const bookings = vtable([
+    ['Program', (b) => b.program], ['Frame / port', (b) => `${b.frame} ${b.port}`], ['Kind', (b) => b.kind], ['Who', (b) => b.who],
+    ['Start → end (sim s)', (b) => `${b.start} → ${b.end}`], ['Daily', (b) => (b.daily ? 'yes' : '')], ['Status', (b) => b.status], ['Reason', (b) => b.reason],
+    ['', (b) => (b.status === 'booked' ? commandButton('Cancel', () => api.command('cancel_booking', { booking: b.id }), say) : '')],
+  ], 'No booking (trunk/Booking/…).');
   const bandwidth = live();
   const productions = live();
   const node = el(
@@ -35,11 +43,7 @@ export function create({ api, say }) {
   return {
     node,
     update(s) {
-      const ts = Object.values(s.trunks).sort((a, b) => (b.connections?.length ?? 0) - (a.connections?.length ?? 0));
-      trunks.set(table([
-        ['Trunk', (t) => t.id], ['A', (t) => `${t.a_frame} C${t.a_caster ?? ''}`], ['B', (t) => `${t.b_frame} C${t.b_caster ?? ''}`],
-        ['In use', (t) => meter(t.connections?.length ?? 0, t.capacity ?? 0)], ['Gain A / B', (t) => `${t.gain_a_db ?? 0} / ${t.gain_b_db ?? 0} dB`],
-      ], ts, 'No trunk is up (trunk/Trunk/…).'));
+      trunks.set(Object.values(s.trunks).sort((a, b) => (b.connections?.length ?? 0) - (a.connections?.length ?? 0)));
       const frames = s.frames;
       const per = {};
       for (const c of Object.values(s.connections)) {
@@ -69,12 +73,7 @@ export function create({ api, say }) {
           ['Live', (r) => String(r[1].live ?? 0)], ['Trunks', (r) => `${r[1].trunks_used ?? 0}/${r[1].trunks ?? 0}`],
         ], Object.entries(pr), 'No production in the fader.')
         : el('p', { class: 'hint' }, 'No productions on the bus yet (trunk/View/Productions).'));
-      const bs = Object.values(s.bookings).sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
-      bookings.set(table([
-        ['Program', (b) => b.program], ['Frame / port', (b) => `${b.frame} ${b.port}`], ['Kind', (b) => b.kind], ['Who', (b) => b.who],
-        ['Start → end (sim s)', (b) => `${b.start} → ${b.end}`], ['Daily', (b) => (b.daily ? 'yes' : '')], ['Status', (b) => b.status], ['Reason', (b) => b.reason],
-        ['', (b) => (b.status === 'booked' ? commandButton('Cancel', () => api.command('cancel_booking', { booking: b.id }), say) : '')],
-      ], bs, 'No booking (trunk/Booking/…).'));
+      bookings.set(Object.values(s.bookings).sort((a, b) => (a.start ?? 0) - (b.start ?? 0)));
     },
   };
 }

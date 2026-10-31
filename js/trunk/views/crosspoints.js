@@ -2,6 +2,7 @@
 // MIT Licence. Free, for everyone, for ever. Full text in LICENSE at the root.
 import { el, section, table, ago, commandButton } from '../dom.js';
 import { live } from '../view.js';
+import { vtable } from '../virtual.js';
 import * as C from '../../../vendor/apk-contracts/apk-contracts.mjs';
 
 /**
@@ -14,7 +15,12 @@ import * as C from '../../../vendor/apk-contracts/apk-contracts.mjs';
  * crosspoint (crosspoint_reset) after you say so.
  */
 export function create({ api, say }) {
-  const frames = live();
+  let store = null;
+  const counted = live();
+  const closed = vtable([
+    ['Frame', (r) => r.frame], ['Input', (r) => r.input], ['Output', (r) => r.output], ['Connection', (r) => el('code', {}, r.connection ?? '')],
+    ['Ward-Beck', (r) => el('code', {}, wardBeck(store, r))], ['Since', (r) => ago(Date.parse(r.at) || 0)],
+  ], 'No closed crosspoint (trunk/Crosspoint/…).');
   const recent = live();
   const taps = live();
   const node = el(
@@ -22,22 +28,18 @@ export function create({ api, say }) {
     { class: 'tc-view' },
     el('div', { class: 'tc-row' },
       commandButton('Reset every crosspoint', () => (confirm('Open every crosspoint on every frame?') ? api.command('crosspoint_reset', {}) : Promise.resolve({ ok: false, status: 'cancelled', detail: '' })), say)),
-    section('Closed crosspoints by frame', frames.node),
+    section('Closed crosspoints by frame', counted.node, closed.node),
     section('Recent crosspoint events', recent.node),
     section('Tap strips', taps.node),
   );
   return {
     node,
     update(s) {
+      store = s;
       const docs = Object.values(s.crosspoints).filter((d) => d.closed?.length).sort((a, b) => String(a.frame).localeCompare(String(b.frame)));
       const rows = docs.flatMap((d) => d.closed.map((x) => ({ ...x, frame: d.frame, at: d.at, seq: d.seq })));
-      frames.set(
-        el('p', { class: 'hint' }, `${rows.length} closed on ${docs.length} frames.`),
-        table([
-          ['Frame', (r) => r.frame], ['Input', (r) => r.input], ['Output', (r) => r.output], ['Connection', (r) => el('code', {}, r.connection ?? '')],
-          ['Ward-Beck', (r) => el('code', {}, wardBeck(s, r))], ['Since', (r) => ago(Date.parse(r.at) || 0)],
-        ], rows, 'No closed crosspoint (trunk/Crosspoint/…).'),
-      );
+      counted.set(rows.length ? el('p', { class: 'hint' }, `${rows.length} closed on ${docs.length} frames.`) : null);
+      closed.set(rows);
       const strips = Object.values(s.views?.Taps ?? {}).filter((t) => t && t.faders?.length).sort((a, b) => (b.kbps ?? 0) - (a.kbps ?? 0) || String(a.frame).localeCompare(String(b.frame)));
       taps.set(s.views?.Taps
         ? [

@@ -2,6 +2,7 @@
 // MIT Licence. Free, for everyone, for ever. Full text in LICENSE at the root.
 import { el, section, table, form, ago, commandButton } from '../dom.js';
 import { live } from '../view.js';
+import { vtable } from '../virtual.js';
 
 /**
  * THE SIMULATOR — Trunk-Caster's fader and simulated clock, the requests it
@@ -15,7 +16,12 @@ import { live } from '../view.js';
  * window each (Intercom › Sims).
  */
 export function create({ api, say }) {
-  const conns = live();
+  const conns = vtable([
+    ['Who', (c) => c.who], ['From', (c) => `${c.from_frame} ${c.from_port ?? ''}`], ['To', (c) => `${c.to_frame} ${c.to_port ?? ''}`],
+    ['Kind', (c) => `${c.kind}${c.hops?.length ? ` · ${c.hops.length} hop${c.hops.length > 1 ? 's' : ''}` : ''}`],
+    ['Granted', (c) => ago(c.granted_unix)], ['Why', (c) => c.why], ['Origin', (c) => c.origin],
+    ['', (c) => commandButton('Release', () => api.command('release', { connection: c.id }), say)],
+  ], 'No live connection (trunk/Connection/…).');
   const events = live();
   const status = live();
   const report = live();
@@ -58,13 +64,7 @@ export function create({ api, say }) {
   return {
     node,
     update(s) {
-      const rows = Object.values(s.connections).sort((a, b) => (b.granted_unix ?? 0) - (a.granted_unix ?? 0));
-      conns.set(table([
-        ['Who', (c) => c.who], ['From', (c) => `${c.from_frame} ${c.from_port ?? ''}`], ['To', (c) => `${c.to_frame} ${c.to_port ?? ''}`],
-        ['Kind', (c) => `${c.kind}${c.hops?.length ? ` · ${c.hops.length} hop${c.hops.length > 1 ? 's' : ''}` : ''}`],
-        ['Granted', (c) => ago(c.granted_unix)], ['Why', (c) => c.why], ['Origin', (c) => c.origin],
-        ['', (c) => commandButton('Release', () => api.command('release', { connection: c.id }), say)],
-      ], rows, 'No live connection (trunk/Connection/…).'));
+      conns.set(Object.values(s.connections).sort((a, b) => (b.granted_unix ?? 0) - (a.granted_unix ?? 0)));
       const v = s.views ?? {};
       const presets = Array.isArray(v.Presets) ? v.Presets : [];
       const ids = presets.map((p) => p.id).join('|');

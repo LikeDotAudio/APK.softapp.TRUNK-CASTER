@@ -45,7 +45,7 @@ index.html ─▶ js/app.js route()
 |---|---|
 | `index.html`, `css/app.css` | The window: tab bar, Trunk-Caster pane, intercom frame, machines pane |
 | `js/app.js` | Hash routing, `?engine=local`, the footer-keys switch |
-| `js/trunk/` | The Trunk-Caster views: `bus.js` (the shell's trunkApi), `view.js`, `routes.js`, `dom.js`, `views/*.js` |
+| `js/trunk/` | The Trunk-Caster views: `bus.js` (the shell's trunkApi), `view.js`, `routes.js`, `dom.js`, `virtual.js` (windowed tables and lists: only the rows in sight are drawn, ROAD-3466), `views/*.js` |
 | `data/` | Written by `tools/build-trunk-windows.mjs`: `protocols.json`, `decks/`, `land.json` |
 | `tools/build-trunk-windows.mjs` | One APK:OS window per view, Stream Deck and protocol, from data; `--check` |
 | `js/machines.js` | The Machines tab |

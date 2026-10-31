@@ -9,7 +9,7 @@
 
 ## Test
 
-`npm test` → `node --test tests/*.test.mjs` — 26 tests, the one local check (no CI workflow). On 2026-10-31: 26 pass after ROAD-3440 (`intercom/` rebuilt from `SRC/microcom-sim` `5bbd846`, and the machine-store test loads `vendor/apk-contracts/apk-contracts.global.js` before the OS's `machine-bus.js`). Node ≥ 22.18. Monorepo smoke run:
+`npm test` → `node --test tests/*.test.mjs` — 30 tests (30 pass on 2026-10-31 after ROAD-3466), the one local check (no CI workflow). On 2026-10-31: 26 pass after ROAD-3440 (`intercom/` rebuilt from `SRC/microcom-sim` `5bbd846`, and the machine-store test loads `vendor/apk-contracts/apk-contracts.global.js` before the OS's `machine-bus.js`). Node ≥ 22.18. Monorepo smoke run:
 [SMOKE.md](../%F0%9F%A7%A9Manual%20and%20Artifacts/SMOKE.md).
 
 ## Ship
@@ -33,6 +33,11 @@
 
 - Rebuilding `intercom/` after a submodule bump is by hand (`tools/build-intercom.sh`); `npm test` fails until it is done, because it holds `BUILT-FROM` to the `SRC/microcom-sim` gitlink.
 - After a Stream Deck definition or the caster's protocol table changes, run `node tools/build-trunk-windows.mjs` and rebuild the OS manifests (`WEB.OsApi/SRC/build_os_manifests.py`).
+
+## Delivered 2026-10-31: the long windows draw only what is in sight (ROAD-3466)
+
+- `js/trunk/virtual.js` — `vtable()` (fixed-height rows, measured) and `vlist()` (differing heights, measured and remembered by key) draw only the rows in sight plus 8 either side in a focusable scrolling box (arrows/Page keys scroll it; rows, buttons and text selection as before; browser find sees only the rows in sight). Cross Points (closed crosspoints), Simulator (live connections), Users (people, phone book, who asked whom), Usage (trunks, bookings) and Racks (sites and units) use them; the capped tables (last 40/60 events, 60 tap strips, 40 bandwidth trunks) are unchanged. Measured in the OS shell (#/<display>, headless Chrome, busy-hour store of 4,662 connections, 2,691 trunks, 39,050 closed crosspoints replayed through `OS.trunkBusIngest` at 4,600 msg/s): elements 352k/47k/33k/32k/45k → 1.1k/0.7k/0.6k/1.5k/0.8k; one update+layout 1,877/257/167/131/158 ms → 10/6/18/19/4 ms; fps 4-5/9/13-16/10-14/10-15 → 28/30/29/24/30, level with the 84-element Analyzer and Relay windows in the same run (24-28). `npm test` 30 pass (3 new windowing tests).
+- `intercom/` re-pinned: `BUILT-FROM` → `dea739e` (the pinned microcom-sim; the rebuild changed no asset), so the pinned-build test passes again.
 
 ## Delivered 2026-10-31: portable file names (no `:` `|` or case twins)
 
