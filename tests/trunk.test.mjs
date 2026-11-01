@@ -13,7 +13,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { routeOf, VIEWS } from '../js/trunk/routes.js';
-import { project, arc } from '../js/trunk/views/globe.js';
+import { project, arc, unit, vectors, orientation, projectUnit, ArcCache, painter } from '../js/trunk/views/globe.js';
 import { joins, connectionOf, callFrame } from '../js/trunk/views/deck.js';
 import { agree, checkedIn } from '../js/trunk/views/sim.js';
 import { wardBeck } from '../js/trunk/views/crosspoints.js';
@@ -54,6 +54,43 @@ test('a great-circle arc runs from a to b', () => {
   assert.ok(Math.abs(pts[0][0] + 0.1) < 1e-6 && Math.abs(pts[0][1] - 51.5) < 1e-6);
   assert.ok(Math.abs(pts[16][0] + 74) < 1e-6 && Math.abs(pts[16][1] - 40.7) < 1e-6);
   assert.ok(pts[8][1] > 51.5, 'London to New York bows north');
+});
+
+test('the globe projects a cached unit vector exactly as project() projects lon/lat (ROAD-3468)', () => {
+  for (const [lon, lat, lon0, lat0] of [[10, 20, 10, 20], [190, -20, 10, 20], [100, 0, 10, 0], [-74, 40.7, -40, 25], [151.2, -33.9, -40, 25]]) {
+    const [x, y, v] = project(lon, lat, lon0, lat0);
+    const [ux, uy, uv] = projectUnit(...unit(lon, lat), orientation(lon0, lat0));
+    assert.ok(Math.abs(x - ux) < 1e-12 && Math.abs(y - uy) < 1e-12 && v === uv, `${lon},${lat} from ${lon0},${lat0}`);
+  }
+  const flat = vectors([-0.1, 51.5, -74, 40.7]), pairs = vectors([[-0.1, 51.5], [-74, 40.7]]);
+  assert.equal(flat.length, 6);
+  assert.deepEqual(Array.from(flat), Array.from(pairs), 'a land ring and a point list pack alike');
+});
+
+test('a trunk arc is built once and kept until its ends move; trunks on one arc share it (ROAD-3468)', () => {
+  const cache = new ArcCache(16);
+  const lon = [-0.1, 51.5], nyc = [-74, 40.7], tyo = [139.7, 35.7];
+  const first = cache.update([[lon, nyc], [lon, tyo], [lon, nyc]]);
+  assert.equal(cache.built, 2, 'two distinct arcs built');
+  assert.deepEqual(first.map((a) => a.count), [2, 1], 'two trunks along London-New York');
+  assert.equal(first[0].vecs.length, 17 * 3);
+  const again = cache.update([[[-0.1, 51.5], [-74, 40.7]], [lon, tyo]]);
+  assert.equal(cache.built, 2, 'a bus update with the same ends builds nothing');
+  assert.equal(again[0].vecs, first[0].vecs, 'and hands back the very same geometry');
+  cache.update([[lon, [-73, 40.7]]]);
+  assert.equal(cache.built, 3, 'a moved end builds its arc again');
+  assert.equal(cache.byKey.size, 1, 'arcs no trunk runs any more are dropped');
+});
+
+test('a still globe is not drawn again; the spin, a turn or new data draws it (ROAD-3468)', () => {
+  const p = painter();
+  assert.ok(p.due(-40, 25, false), 'the first frame draws');
+  assert.ok(!p.due(-40, 25, false), 'nothing moved: no draw');
+  p.mark();
+  assert.ok(p.due(-40, 25, false), 'new data draws once');
+  assert.ok(!p.due(-40, 25, false));
+  assert.ok(p.due(-30, 25, false), 'a drag turned it');
+  assert.ok(p.due(-30, 25, true) && p.due(-30, 25, true), 'while it spins every frame draws');
 });
 
 test('a Stream Deck key lights only for a connection from its port to its target', () => {
