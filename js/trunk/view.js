@@ -1,6 +1,6 @@
 // Part of the APK.audio project — http://APK.audio — made by Anthony Kuzub
 // MIT Licence. Free, for everyone, for ever. Full text in LICENSE at the root.
-import { trunkApi, casterWord } from './bus.js';
+import { trunkApi, casterWord, createStandaloneTrunkApi } from './bus.js';
 import { el } from './dom.js';
 
 /**
@@ -12,10 +12,14 @@ import { el } from './dom.js';
  */
 export function mountView(root, create, { say, param, status } = {}) {
   root.replaceChildren();
-  const api = trunkApi();
+  let api = trunkApi();
+  let isStandalone = false;
   if (api.missing) {
-    root.append(el('div', { class: 'empty' }, el('h2', {}, 'No bus here'), el('p', {}, api.missing)));
-    return () => {};
+    // When opened outside the shell, use standalone bus so all views work cleanly
+    api = createStandaloneTrunkApi();
+    isStandalone = true;
+    const pill = typeof document !== 'undefined' ? document.getElementById('standalone-pill') : null;
+    if (pill) pill.hidden = false;
   }
   const ctx = { api, say: say ?? (() => {}), param };
   const view = create(ctx);
@@ -26,7 +30,10 @@ export function mountView(root, create, { say, param, status } = {}) {
     queued = false;
     if (stopped) return;
     const store = api.snapshot();
-    if (status) status.textContent = `caster: ${casterWord(store)} · ${Object.keys(store.frames).length} frames · ${Object.keys(store.connections).length} connections`;
+    if (status) {
+      const modeLabel = isStandalone ? '<span style="opacity:0.85;color:var(--apk-accent,#ffa600);margin-right:6px;">[Standalone Bus]</span>' : '';
+      status.innerHTML = `${modeLabel}caster: ${casterWord(store)} · ${Object.keys(store.frames || {}).length} frames · ${Object.keys(store.connections || {}).length} connections`;
+    }
     view.update(store);
   };
   const unwatch = api.watch(() => {

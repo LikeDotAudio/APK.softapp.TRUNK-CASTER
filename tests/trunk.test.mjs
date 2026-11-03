@@ -17,7 +17,7 @@ import { project, arc, unit, vectors, orientation, projectUnit, ArcCache, painte
 import { joins, connectionOf, callFrame } from '../js/trunk/views/deck.js';
 import { agree, checkedIn } from '../js/trunk/views/sim.js';
 import { wardBeck } from '../js/trunk/views/crosspoints.js';
-import { trunkApi, TRUNK_API, casterWord } from '../js/trunk/bus.js';
+import { trunkApi, TRUNK_API, casterWord, createStandaloneTrunkApi } from '../js/trunk/bus.js';
 import { windowOf, spanOf, OVERSCAN, BLIND_ROWS } from '../js/trunk/virtual.js';
 import { rackItems } from '../js/trunk/views/racks.js';
 
@@ -130,6 +130,20 @@ test('the shell door: no parent, no store, another version — each said, not a 
   assert.equal(casterWord({ caster: { state: 'listening' } }), 'listening');
   assert.equal(casterWord({ caster: { state: { state: 'unavailable' } } }), 'unavailable');
   assert.equal(casterWord({ caster: {} }), 'unheard');
+});
+
+test('standalone fallback trunk API provides live-looking topology outside the OS', async () => {
+  const api = createStandaloneTrunkApi();
+  assert.equal(api.version, TRUNK_API);
+  assert.equal(api.signedIn(), true);
+  const snap = api.snapshot();
+  assert.ok(snap.frames['hq-m7880-01']);
+  assert.ok(snap.trunks['trunk-tor-nyc']);
+  assert.ok(snap.sites['toronto']);
+  assert.equal(casterWord(snap), 'listening');
+  const res = await api.command('fader_quick', { speed: 120 });
+  assert.equal(res.ok, true);
+  assert.equal(api.snapshot().sim.speed, 120);
 });
 
 const MONOREPO = existsSync(join(APP, '../../../../POD.THICK/PLUGINS/PLUGIN.TRUNK_CASTER/SRC/data/protocols.json'));

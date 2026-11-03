@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MACHINE_API, actionsFor, judge, machineApi } from '../js/machines.js';
+import { MACHINE_API, actionsFor, judge, machineApi, createStandaloneMachineApi } from '../js/machines.js';
 
 const named = () => ({ machineBusList: () => ['l'], machineBusRead: (h) => `r:${h}`, machineBusWatch: () => () => {}, machineCommand: async (q) => q });
 
@@ -42,6 +42,19 @@ test('a versioned machineApi is held to MACHINE_API', () => {
   assert.match(machineApi({ machineApi: { version: MACHINE_API + 1, ...api } }).missing, /speaks machine API 1; the OS offers 2/);
   assert.match(machineApi({ machineApi: { version: MACHINE_API, list: api.list } }).missing, /lacks read, watch, command/);
   assert.match(machineApi({ machineApi: { ...api } }).missing, /unversioned/);
+});
+
+test('standalone machine API provides machine telemetry and commands outside OS', async () => {
+  const api = createStandaloneMachineApi();
+  assert.equal(api.version, MACHINE_API);
+  const list = api.list();
+  assert.ok(list.length >= 2);
+  const rec = api.read('portal-audio-01');
+  assert.ok(rec);
+  assert.equal(judge(rec).state, 'online');
+  const res = await api.command({ host: 'portal-audio-01', verb: 'restart-service' });
+  assert.equal(res.cancelled, false);
+  assert.ok(res.command_id);
 });
 
 function findOs() {

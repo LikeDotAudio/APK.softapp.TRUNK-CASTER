@@ -160,15 +160,127 @@ const BUTTONS = [['power', '⏻', 'Power'], ['run', '›_', 'Run a named command
 
 const bar = (v, warn = 80, bad = 92) => (Number.isFinite(v) ? `<span class="meter ${v >= bad ? 'bad' : v >= warn ? 'warn' : ''}"><i style="width:${Math.min(100, v)}%"></i></span>` : '');
 
+let standaloneMachineSingleton = null;
+
+/** Default standalone machine telemetry when running outside the OS shell. */
+export function createStandaloneMachineApi() {
+  if (standaloneMachineSingleton) return standaloneMachineSingleton;
+
+  const now = Date.now();
+  const list = [
+    {
+      host: 'portal-audio-01',
+      segment: 'portal-audio-01',
+      probe: 'APK.audio/System/BareMetal/MonitorProbes/portal-audio-01',
+      heardAt: now - 15000,
+      statusAt: now - 15000,
+      status: { status: 'online' },
+      telemetry: {
+        os: { system: 'Linux', release: '6.8.0-audio', architecture: 'x86_64', uptime_sec: 172800 },
+        cpu: { overall_percent: 21.4, core_count: 16, load_avg: { '1m': 0.62 }, temperatures: { 'Core 0': 46.5, 'Core 1': 47.0 } },
+        memory: { percent: 34.2, total_mb: 65536 },
+        storage: { partitions: [{ mountpoint: '/', percent: 48, total_gb: 1960 }] },
+        network: { interfaces: { eno1: ['192.168.1.50'], eth0: ['10.0.0.10'] } }
+      },
+      detail: {
+        hostname: 'portal-audio-01',
+        power_method: 'os',
+        commands: ['uptime', 'restart-service', 'vacuum-logs'],
+        deploys: ['plugins', 'config'],
+        macs: [{ interface: 'eno1', mac: '52:54:00:11:22:33' }]
+      },
+      answer: null
+    },
+    {
+      host: 'trunk-caster-node',
+      segment: 'trunk-caster-node',
+      probe: 'APK.audio/System/BareMetal/MonitorProbes/trunk-caster-node',
+      heardAt: now - 8000,
+      statusAt: now - 8000,
+      status: { status: 'online' },
+      telemetry: {
+        os: { system: 'Linux', release: '6.8.0-rt', architecture: 'x86_64', uptime_sec: 345600 },
+        cpu: { overall_percent: 14.8, core_count: 8, load_avg: { '1m': 0.28 }, temperatures: { 'Core 0': 41.2, 'Core 1': 42.0 } },
+        memory: { percent: 22.5, total_mb: 32768 },
+        storage: { partitions: [{ mountpoint: '/', percent: 32, total_gb: 980 }] },
+        network: { interfaces: { eno1: ['192.168.1.51'] } }
+      },
+      detail: {
+        hostname: 'trunk-caster-node',
+        power_method: 'os',
+        commands: ['uptime', 'reload-matrix', 'resync-ptp'],
+        deploys: ['firmware', 'plugins'],
+        macs: [{ interface: 'eno1', mac: '52:54:00:44:55:66' }]
+      },
+      answer: null
+    },
+    {
+      host: 'ob-truck-gateway',
+      segment: 'ob-truck-gateway',
+      probe: 'APK.audio/System/BareMetal/MonitorProbes/ob-truck-gateway',
+      heardAt: now - 35000,
+      statusAt: now - 35000,
+      status: { status: 'online' },
+      telemetry: {
+        os: { system: 'Linux', release: '6.8.0-edge', architecture: 'aarch64', uptime_sec: 86400 },
+        cpu: { overall_percent: 32.1, core_count: 12, load_avg: { '1m': 1.10 }, temperatures: { 'SoC': 54.0 } },
+        memory: { percent: 45.0, total_mb: 16384 },
+        storage: { partitions: [{ mountpoint: '/', percent: 61, total_gb: 480 }] },
+        network: { interfaces: { eth0: ['192.168.10.20'], srt0: ['10.10.0.2'] } }
+      },
+      detail: {
+        hostname: 'ob-truck-gateway',
+        power_method: 'os',
+        commands: ['uptime', 'ping-hq', 'reconnect-srt'],
+        deploys: ['config'],
+        macs: [{ interface: 'eth0', mac: '52:54:00:77:88:99' }]
+      },
+      answer: null
+    }
+  ];
+
+  const map = new Map(list.map((r) => [r.host, r]));
+  const seats = new Set();
+
+  standaloneMachineSingleton = {
+    version: MACHINE_API,
+    isStandalone: true,
+    list() {
+      return Array.from(map.values());
+    },
+    read(host) {
+      return map.get(host) ?? null;
+    },
+    watch(fn) {
+      if (typeof fn !== 'function') return () => {};
+      seats.add(fn);
+      return () => seats.delete(fn);
+    },
+    async command(req) {
+      const rec = map.get(req.host);
+      const cmdId = `standalone-cmd-${Date.now().toString(36)}`;
+      const logId = `log-${Math.random().toString(36).slice(2, 6)}`;
+      if (rec) {
+        rec.answer = { id: cmdId, status: 'ok', detail: `Action ${req.verb || req.action || 'command'} confirmed in standalone mode` };
+        seats.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } });
+      }
+      return { cancelled: false, log_id: logId, command_id: cmdId };
+    }
+  };
+
+  return standaloneMachineSingleton;
+}
+
 /** Draw the machines into `host`, keep them current; returns the unmount. */
 export function mountMachines(host, status) {
-  const os = machineApi(shell());
+  let os = machineApi(shell());
+  let isStandalone = false;
   if (os.missing === 'not in the OS') {
-    host.innerHTML = `<div class="empty"><h2>No bus here</h2><p>The machines are read from the APK.audio OS's own connection to the bus. Open TRUNK-CASTER from the OS — <b>Intercom → TRUNK-CASTER</b> — to see them.</p></div>`;
-    status.textContent = 'not in the OS';
-    return () => {};
-  }
-  if (os.missing) {
+    os = createStandaloneMachineApi();
+    isStandalone = true;
+    const pill = typeof document !== 'undefined' ? document.getElementById('standalone-pill') : null;
+    if (pill) pill.hidden = false;
+  } else if (os.missing) {
     host.innerHTML = `<div class="empty"><h2>This OS cannot show the machines</h2><p>${esc(os.missing)}. Update the APK.audio OS, or this window, so the two agree.</p></div>`;
     status.textContent = `needs machine API ${MACHINE_API}`;
     return () => {};
@@ -234,7 +346,8 @@ export function mountMachines(host, status) {
     const rows = os.list().map((r) => ({ r, j: judge(r, now), h: health(r) }));
     rows.sort((a, b) => ORDER[a.j.state] - ORDER[b.j.state] || a.r.host.localeCompare(b.r.host));
     const count = (s) => rows.filter((x) => x.j.state === s).length;
-    status.textContent = rows.length ? `${count('online')} online · ${count('unresponsive') + count('offline')} dead · ${count('stale') + count('unknown')} unheard` : '';
+    const modeTag = isStandalone ? '<span style="color:var(--apk-accent,#ffa600);opacity:0.85;margin-right:6px;">[Standalone Bus]</span>' : '';
+    status.innerHTML = rows.length ? `${modeTag}${count('online')} online · ${count('unresponsive') + count('offline')} dead · ${count('stale') + count('unknown')} unheard` : '';
     if (!rows.length) {
       host.innerHTML = `<div class="empty"><h2>No machines on the bus yet</h2><p>A machine appears here when its monitor probe speaks under <code>APK.audio/System/BareMetal/MonitorProbes/</code> — run PLUGIN.DESKTOP_MONITOR on it.</p></div>`;
       return;
