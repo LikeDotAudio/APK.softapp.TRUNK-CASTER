@@ -271,6 +271,32 @@ export function createStandaloneMachineApi() {
   return standaloneMachineSingleton;
 }
 
+
+/* THE ONE TABLE (ROAD-3494): the fleet is APKTable 'trunk-caster-machines'
+   (vendor/apk-table, held to /FrontEnd/shared by check.sh webshared). The rows
+   stay this file's escaped markup — buttons, bars, the click delegation on
+   `host` — written through APKTable.markup() once and adopted; after that only
+   the tbody is rewritten, so a sort or filter the operator chose survives the
+   5 s redraw. Any script reads it as APKTable.get('trunk-caster-machines'). */
+export const MACHINES_TABLE_ID = 'trunk-caster-machines';
+const MACHINES_HEAD = '<tr><th data-key="machine">machine</th><th data-key="state">state</th><th data-key="os">OS · up</th><th data-key="cpu">CPU</th><th data-key="memory">memory</th><th data-key="disk">fullest disk</th><th data-key="hottest">hottest</th><th data-key="seen">last seen at</th><th data-key="actions" title="Power, a named command, a deploy — each confirmed in the OS, logged and sent as the operator">actions</th></tr>';
+
+export function paintMachines(host, body, hint, T = globalThis.APKTable) {
+  const live = T && T.get(MACHINES_TABLE_ID);
+  if (live && live.el && host.contains(live.el)) {
+    const tbody = live.el.querySelector('tbody');
+    tbody.innerHTML = body;
+    live.render();   // re-read the rows now, keeping the sort and filter
+    const p = host.querySelector('p.hint');
+    if (p) p.innerHTML = hint;
+    return live;
+  }
+  host.innerHTML = T.markup({ id: MACHINES_TABLE_ID, className: 'machines', head: MACHINES_HEAD, body, toolbar: true, searchPlaceholder: 'Filter machines' })
+    + `<p class="hint">${hint}</p>`;
+  T.scan(host);
+  return T.get(MACHINES_TABLE_ID);
+}
+
 /** Draw the machines into `host`, keep them current; returns the unmount. */
 export function mountMachines(host, status) {
   let os = machineApi(shell());
@@ -352,25 +378,22 @@ export function mountMachines(host, status) {
       host.innerHTML = `<div class="empty"><h2>No machines on the bus yet</h2><p>A machine appears here when its monitor probe speaks under <code>APK.audio/System/BareMetal/MonitorProbes/</code> — run PLUGIN.DESKTOP_MONITOR on it.</p></div>`;
       return;
     }
-    host.innerHTML = `
-      <table class="machines">
-        <thead><tr><th>machine</th><th>state</th><th>OS · up</th><th>CPU</th><th>memory</th><th>fullest disk</th><th>hottest</th><th>last seen at</th><th title="Power, a named command, a deploy — each confirmed in the OS, logged and sent as the operator">actions</th></tr></thead>
-        <tbody>${rows
-          .map(({ r, j, h }) => `
+    const body = rows
+      .map(({ r, j, h }) => `
           <tr class="${j.state}" data-apk-state="${j.state}">
-            <td><b>${esc(r.host)}</b><div class="sub">${esc(r.probe)}</div></td>
-            <td><span class="dot"></span>${esc(j.state)}<div class="sub">${esc(j.why)}</div></td>
+            <td data-sort="${esc(r.host)}"><b>${esc(r.host)}</b><div class="sub">${esc(r.probe)}</div></td>
+            <td data-sort="${ORDER[j.state]}"><span class="dot"></span>${esc(j.state)}<div class="sub">${esc(j.why)}</div></td>
             <td>${esc(h.os || '—')}<div class="sub">${h.uptime ? `up ${esc(h.uptime)}` : ''}</div></td>
-            <td>${bar(h.cpu)} ${pct(h.cpu)}<div class="sub">${h.cores ? `${h.cores} cores` : ''}${Number.isFinite(h.load) ? ` · load ${h.load.toFixed(2)}` : ''}</div></td>
-            <td>${bar(h.mem)} ${pct(h.mem)}<div class="sub">${h.memTotal ? `of ${(h.memTotal / 1024).toFixed(1)} GB` : ''}</div></td>
-            <td>${h.disk ? `${bar(h.disk.percent)} ${pct(h.disk.percent)}<div class="sub">${esc(h.disk.at)} · ${h.disk.total} GB</div>` : '—'}</td>
-            <td>${h.hot ? `<span class="${h.hot.c >= 85 ? 'hot' : ''}">${h.hot.c.toFixed(0)} °C</span><div class="sub">${esc(h.hot.label)}</div>` : '—'}</td>
+            <td data-sort="${Number.isFinite(h.cpu) ? h.cpu : ''}">${bar(h.cpu)} ${pct(h.cpu)}<div class="sub">${h.cores ? `${h.cores} cores` : ''}${Number.isFinite(h.load) ? ` · load ${h.load.toFixed(2)}` : ''}</div></td>
+            <td data-sort="${Number.isFinite(h.mem) ? h.mem : ''}">${bar(h.mem)} ${pct(h.mem)}<div class="sub">${h.memTotal ? `of ${(h.memTotal / 1024).toFixed(1)} GB` : ''}</div></td>
+            <td data-sort="${h.disk ? h.disk.percent : ''}">${h.disk ? `${bar(h.disk.percent)} ${pct(h.disk.percent)}<div class="sub">${esc(h.disk.at)} · ${h.disk.total} GB</div>` : '—'}</td>
+            <td data-sort="${h.hot ? h.hot.c : ''}">${h.hot ? `<span class="${h.hot.c >= 85 ? 'hot' : ''}">${h.hot.c.toFixed(0)} °C</span><div class="sub">${esc(h.hot.label)}</div>` : '—'}</td>
             <td class="ips">${h.ips.length ? h.ips.map(esc).join('<br>') : '—'}</td>
             <td class="acts">${cell(r, j)}</td>
           </tr>`)
-          .join('')}</tbody>
-      </table>
-      <p class="hint">Alive is a sample heard in the last ${TRUST_MS / 60000} minutes; anything quieter is dead, whatever it last said. Addresses are where each machine was last seen — DHCP moves them. ⏻ ›_ ⤒ offer what each machine's agent says it can do; the OS asks you to confirm, logs it and sends it as the operator, and the machine's answer appears under the buttons. <label><input type="checkbox" data-rehearse${rehearse ? ' checked' : ''}> rehearse (dry run)</label></p>`;
+      .join('');
+    const hint = `Alive is a sample heard in the last ${TRUST_MS / 60000} minutes; anything quieter is dead, whatever it last said. Addresses are where each machine was last seen — DHCP moves them. ⏻ ›_ ⤒ offer what each machine's agent says it can do; the OS asks you to confirm, logs it and sends it as the operator, and the machine's answer appears under the buttons. <label><input type="checkbox" data-rehearse${rehearse ? ' checked' : ''}> rehearse (dry run)</label>`;
+    paintMachines(host, body, hint);
   };
   draw();
   let queued = false;
