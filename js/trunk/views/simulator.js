@@ -1,6 +1,6 @@
 // Part of the APK.audio project — http://APK.audio — made by Anthony Kuzub
 // MIT Licence. Free, for everyone, for ever. Full text in LICENSE at the root.
-import { el, section, table, form, ago, commandButton } from '../dom.js';
+import { el, section, table, form, ago, commandButton, failed } from '../dom.js';
 import { live } from '../view.js';
 import { vtable } from '../virtual.js';
 
@@ -30,12 +30,14 @@ export function create({ api, say }) {
   const speed = el('input', { type: 'range', min: 0, max: 240, step: 1, value: 60 });
   const speedText = el('b', {}, '60×');
   speed.addEventListener('input', () => (speedText.textContent = `${speed.value}×`));
-  speed.addEventListener('change', async () => {
+  const setSpeed = async () => {
     try {
       const r = await api.command('fader_quick', { speed: Number(speed.value) });
-      say(r.ok ? `speed ${speed.value}×` : `speed: ${r.status} — ${r.detail}`);
-    } catch (err) { say(err.message); }
-  });
+      if (r.ok) say(`speed ${speed.value}×`);
+      else failed('speed', r, { say, retry: setSpeed });
+    } catch (err) { failed('speed', err, { say, retry: setSpeed }); }
+  };
+  speed.addEventListener('change', setSpeed);
   const node = el(
     'div',
     { class: 'tc-view' },

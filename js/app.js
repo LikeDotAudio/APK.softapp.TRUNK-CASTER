@@ -112,19 +112,63 @@ function footerSwitch() {
 
 // the Stream Deck and Sims pickers are routes too, filled from the data the tool wrote
 async function fillPickers() {
-  const load = async (path) => {
-    try {
-      const r = await fetch(path);
-      return r.ok ? r.json() : [];
-    } catch {
-      return [];
+  // a list that cannot be read leaves its picker empty and says why, with a Retry that fills it
+  const load = async (path, subject) => {
+    const sdk = window.APKSoftapp;
+    if (!sdk?.fetchJson) {
+      try {
+        const r = await fetch(path);
+        return r.ok ? r.json() : [];
+      } catch {
+        return [];
+      }
     }
+    const r = await sdk.fetchJson(path, { subject });
+    if (r.ok) return Array.isArray(r.data) ? r.data : [];
+    sdk.showProblem(r.problem, {
+      onRetry: fillPickers,
+      fix: [`${path} is this app's own data, written by npm run build:windows (tools/build-trunk-windows.mjs); run it, then up-stack WEB.Frontend-Assets.`],
+    });
+    return [];
   };
-  const decks = await load('data/decks/index.json');
-  const sims = await load('data/protocols.json');
-  document.getElementById('decks').append(...decks.map((d) => Object.assign(document.createElement('option'), { value: `#deck/${d.model}`, textContent: d.name })));
-  document.getElementById('sims').append(...sims.map((p) => Object.assign(document.createElement('option'), { value: `#sim/${p.id}`, textContent: p.name })));
+  const decks = await load('data/decks/index.json', 'the 🎛 Decks list');
+  const sims = await load('data/protocols.json', 'the 🧪 Sims list');
+  const fill = (id, rows) => {
+    const pick = document.getElementById(id);
+    pick.replaceChildren(pick.options[0], ...rows);
+  };
+  fill('decks', decks.map((d) => Object.assign(document.createElement('option'), { value: `#deck/${d.model}`, textContent: d.name })));
+  fill('sims', sims.map((p) => Object.assign(document.createElement('option'), { value: `#sim/${p.id}`, textContent: p.name })));
 }
+
+/* What this window is: its inputs, outputs and controls, behind the ? (F1). */
+window.APKSoftapp?.describe({
+  name: 'TRUNK-CASTER',
+  does: 'Trunk-Caster (globe, relay, simulator, crosspoints, usage, space, racks, users, analyzer, Stream Deck panels, protocol sims) read off the bus through the OS shell; the MicroCOM II intercom in the browser; and the bare metal machines the monitor probes report.',
+  inputs: [
+    { name: 'Trunk-Caster store', from: 'the OS shell (OS.trunkApi, APK:OS/Network/trunk-bus) — opened on its own, a standalone sample store', kind: 'bus', topic: 'trunk/#' },
+    { name: 'Machines', from: 'the OS shell (OS.machineApi) — monitor probe status and telemetry', kind: 'bus', topic: 'APK.audio/System/BareMetal/MonitorProbes/+/+/status|telemetry' },
+    { name: 'Stream Deck panels', from: 'data/decks/index.json and data/decks/<model>.json', kind: 'file' },
+    { name: 'Protocol sims list', from: 'data/protocols.json', kind: 'file' },
+    { name: 'Globe land outline', from: 'data/land.json', kind: 'file' },
+    { name: 'Intercom pages', from: 'intercom/ (the microcom-sim build), engine=local in this browser', kind: 'file' },
+  ],
+  outputs: [
+    { name: 'Trunk commands', to: 'the caster through the shell (connect, release, book, rename, relay_bind, fader_quick, clock, capture_start…)', kind: 'bus' },
+    { name: 'Machine actions', to: 'OS.machineCommand — the OS confirms, logs and sends as the operator (power, run, deploy; rehearse = dry run)' },
+    { name: 'Footer keys switch', to: 'OS.setIntercomStrip — your station\'s keys in the OS taskbar' },
+    { name: 'Deck key bindings', to: 'this browser\'s localStorage, per frame and target' },
+  ],
+  controls: [
+    { name: 'Tabs', how: 'click a tab, or open #globe #relay #simulator #crosspoints #usage #space #racks #users #analyzer #matrix #panel #mc3 #emu #machines' },
+    { name: '🎛 Decks… / 🧪 Sims…', how: 'pick one to open #deck/<model> or #sim/<protocol>' },
+    { name: 'Globe', how: 'drag to turn it' },
+    { name: 'Forms and buttons', how: 'each sends one command; the answer is said at the bottom, a refusal as a card with Retry' },
+    { name: 'Stream Deck keys', how: 'pick the frame and this panel\'s port; click latches, momentary keys hold' },
+    { name: 'Machines ⏻ ›_ ⤒', how: 'pick an action the machine\'s agent offers; tick rehearse for a dry run' },
+  ],
+  problems: ['fetch_failed', 'http_not_found', 'bad_json', 'control_rejected', 'control_unconfirmed', 'device_unreachable'],
+});
 fillPickers().then(route);
 for (const s of document.querySelectorAll('.tabs select')) s.addEventListener('change', () => s.value && (location.hash = s.value));
 addEventListener('hashchange', route);

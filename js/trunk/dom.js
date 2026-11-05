@@ -40,6 +40,30 @@ export function ago(t, now = Date.now()) {
   return `${Math.round(s / 86400)} d ago`;
 }
 
+/**
+ * A command that did not go through, said as what happened / why / do this
+ * (APKSoftapp.showProblem) with a Retry, else as a line in `say` when the SDK is
+ * not on the page (the tests). A thrown error is explained; an answer that is not
+ * ok is the caster refusing it (control_rejected). A cancel is the person's own
+ * choice and only said.
+ */
+export function failed(subject, what, { say = () => {}, retry } = {}) {
+  const sdk = globalThis.APKSoftapp;
+  const thrown = what instanceof Error || typeof what === 'string';
+  const line = thrown ? `${subject}: ${what?.message ?? what}` : `${subject}: ${what?.status ?? 'no answer'} — ${what?.detail ?? what?.result?.reason ?? ''}`;
+  if (!thrown && what?.status === 'cancelled') return say(line);
+  if (!sdk?.showProblem) return say(line);
+  say(line);
+  const opts = { subject, onRetry: retry };
+  if (thrown) return sdk.showProblem(what, opts);
+  if (!what) return sdk.showProblem('control_unconfirmed', { ...opts, fix: ['Check the caster is up: the status line at the top right says "caster: …" from its own word.'] });
+  return sdk.showProblem('control_rejected', {
+    ...opts,
+    detail: `${what.status ?? 'refused'}${what.detail || what.result?.reason ? ` — ${what.detail ?? what.result.reason}` : ''}`,
+    fix: ['Read the reason above: the caster says why it refused (a busy port, an unknown frame, a value out of range).', 'Change the fields it names and send again.'],
+  });
+}
+
 /** A command button: runs `run()` (a promise of a Result envelope) and says the answer in `say`. */
 export function commandButton(label, run, say, attrs = {}) {
   return el('button', {
@@ -50,9 +74,10 @@ export function commandButton(label, run, say, attrs = {}) {
       b.disabled = true;
       try {
         const r = await run();
-        say(r?.ok ? `${label}: ${r.detail || 'done'}` : `${label}: ${r?.status ?? 'no answer'} — ${r?.detail ?? ''}`);
+        if (r?.ok) say(`${label}: ${r.detail || 'done'}`);
+        else failed(label, r, { say, retry: () => b.click() });
       } catch (err) {
-        say(`${label}: ${err.message}`);
+        failed(label, err, { say, retry: () => b.click() });
       } finally {
         b.disabled = false;
       }
@@ -95,9 +120,10 @@ export function form(title, fields, submitLabel, send, say) {
         button.disabled = true;
         try {
           const r = await send(args);
-          say(r?.ok ? `${submitLabel}: ${r.detail || 'done'}` : `${submitLabel}: ${r?.status ?? 'no answer'} — ${r?.detail ?? ''}`);
+          if (r?.ok) say(`${submitLabel}: ${r.detail || 'done'}`);
+          else failed(submitLabel, r, { say, retry: () => node.requestSubmit() });
         } catch (err) {
-          say(`${submitLabel}: ${err.message}`);
+          failed(submitLabel, err, { say, retry: () => node.requestSubmit() });
         } finally {
           button.disabled = false;
         }

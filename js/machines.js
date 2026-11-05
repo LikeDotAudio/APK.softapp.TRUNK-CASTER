@@ -328,6 +328,7 @@ export function mountMachines(host, status) {
         : { text: `sent · log ${out.log_id} — waiting for the machine to answer`, id: out.command_id };
     } catch (err) {
       said[r.host] = { text: `not sent: ${err.message}`, bad: true };
+      globalThis.APKSoftapp?.showProblem(err, { subject: `${a.label ?? a.verb} on ${r.host}`, onRetry: () => send(r, a) });
     }
     draw();
   };

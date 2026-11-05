@@ -1,6 +1,6 @@
 // Part of the APK.audio project — http://APK.audio — made by Anthony Kuzub
 // MIT Licence. Free, for everyone, for ever. Full text in LICENSE at the root.
-import { el, section } from '../dom.js';
+import { el, section, failed } from '../dom.js';
 import { live, framesOf } from '../view.js';
 
 /**
@@ -50,14 +50,29 @@ export function create({ api, say, param }) {
     grid.node,
     binds.node,
   );
-  fetch(new URL(`../../../data/decks/${encodeURIComponent(model)}.json`, import.meta.url))
-    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${model}: ${r.status}`))))
-    .then((d) => {
-      deck = d;
-      port.value = d.port ?? 0;
-      draw();
-    })
-    .catch((err) => head.set(el('p', { class: 'hint' }, `No panel definition for ${model}: ${err.message}`)));
+  // the panel definition is this app's own data (data/decks/<model>.json): a miss is said with what to do
+  const loadDeck = async () => {
+    const url = new URL(`../../../data/decks/${encodeURIComponent(model)}.json`, import.meta.url).href;
+    const sdk = globalThis.APKSoftapp;
+    if (!sdk?.fetchJson) {
+      return fetch(url)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${model}: ${r.status}`))))
+        .then((d) => { deck = d; port.value = d.port ?? 0; draw(); })
+        .catch((err) => head.set(el('p', { class: 'hint' }, `No panel definition for ${model}: ${err.message}`)));
+    }
+    const r = await sdk.fetchJson(url, { subject: `Stream Deck panel ${model}` });
+    if (!r.ok) {
+      return sdk.showProblem(r.problem, {
+        into: head.node,
+        onRetry: loadDeck,
+        fix: [`Pick a panel from the 🎛 Decks… list: ${model} has no data/decks/${model}.json in this app.`, 'If the list is empty too, rebuild the windows: npm run build:windows, then up-stack WEB.Frontend-Assets.'],
+      });
+    }
+    deck = r.data;
+    port.value = deck.port ?? 0;
+    draw();
+  };
+  loadDeck();
   pick.addEventListener('change', () => draw());
   port.addEventListener('change', () => draw());
 
@@ -155,7 +170,7 @@ export function create({ api, say, param }) {
       const id = connectionOf(r);
       if (mode === 'momentary' && id) held.set(i, id);
     } catch (err) {
-      say(err.message);
+      failed(b.label ?? b.action ?? 'key', err, { say });
     }
   }
 
@@ -163,10 +178,10 @@ export function create({ api, say, param }) {
     const id = held.get(i);
     if (!id) return;
     held.delete(i);
-    try { report(await api.command('release', { connection: id })); } catch (err) { say(err.message); }
+    try { report(await api.command('release', { connection: id })); } catch (err) { failed('release', err, { say }); }
   }
 
-  const report = (r) => say(r?.ok ? r.detail || r.result?.status || 'done' : `${r?.status ?? 'no answer'} — ${r?.detail ?? r?.result?.reason ?? ''}`);
+  const report = (r) => (r?.ok ? say(r.detail || r.result?.status || 'done') : failed(deck?.name ?? model, r, { say }));
 
   return {
     node,
