@@ -58,5 +58,18 @@ TRUNK-CASTER is the OS's Intercom → TRUNK-CASTER window (served from the web-s
 - **WS-07 brand accent** (from the SDK/contracts audit) — `css/app.css` `--accent` is `var(--apk-accent)` (was `#f5a524`); the intercom (microcom-sim → `ba6e1d8`…`81b8914`) dropped the same near-miss upstream, and `intercom/` was rebuilt from it.
 - **WS-07 tints and light-mode accent** (82d755a) — `SRC/microcom-sim` → `6cbd11f`, `SRC/microcom` → `12449ac`: the accent's `rgba(245,165,36,a)` tints read `--apk-accent-rgb`, the light-mode accent and amber are `color-mix` of the tokens; `intercom/` rebuilt from it. Later pins (bc96945, 6c2dc2c) only re-vendor the contracts bundle.
 
+## Delivered 2026-11-11 – 2026-11-12
+
+From this repository's own commits (the commit message is the record):
+
+- vendor: apk-contracts web bundle refreshed from contracts/generated/web (report.ts: LogLine + ProblemRecord, System/Problems family) (`4b86c84`)
+- bump: apk-contracts re-vendored in nested repos (report.ts: LogLine + ProblemRecord) (`23cc634`)
+- vendor/apk-softapp: re-vendored — every problem card is reported through the SDK (ROAD-3695 step 2) (`01ef902`)
+- vendor: apk-contracts web bundle refreshed from contracts/generated/web (five report codes, ROAD-3695; unit-gate, ROAD-3684) (`3418bc6`)
+- bump microcom + microcom-sim: apk-contracts web bundle refreshed (five report codes, ROAD-3695; unit-gate asker id, ROAD-3684) — ROAD-3713 (`60a818e`)
+- re-vendor apk-contracts web bundle: contracts 2.4.0 retires APK.audio/Tests/{suite} (ROAD-3729) (`64f202d`)
+- bump 1 submodule(s): apk-contracts web bundle re-vendored, contracts 2.4.0 retires APK.audio/Tests/{suite} (ROAD-3729) (`0664473`)
+- chore: bump submodules (`9af74b9`)
+
 ## Releases
 - **Released `2.0.0`, tag `v2.0.0`** (2026-11-01, ROAD-3452, the owner's V2) — no SDK pin; every manifest says 2.0.0; GitHub release `v2.0.0`.
